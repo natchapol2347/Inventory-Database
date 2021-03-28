@@ -34,6 +34,13 @@ func New(c uint16) *Cache {
 	}
 }
 
-func (c *Cache) insert_tail(x cacheItem){
-	
+func (c *Cache) insert_tail(newItem *cacheItem){
+	if(c.tail == nil){
+		c.tail = newItem
+		c.head = newItem
+
+	}else{
+		current = 
+	}
+
 }
