@@ -6,8 +6,9 @@ import (
 	"strconv"
 	"sync"
 	"time"
-
+	"github.com/golang/glog"
 	_ "github.com/go-sql-driver/mysql"
+
 )
 
 var (
@@ -35,9 +36,9 @@ func get_items(q chan int, e chan int, n chan string, id int) {
 		fmt.Println("name: ", name, " quantity: ", quantity, " expdate: ", expdate)
 	}
 }
-func decrement(q chan int, c chan int, orderQuantity int, id int) {
-	quantity := <-q // channel from get_items
-	newQuantity := quantity - orderQuantity
+func decrement(q chan int, c chan int, quantity int, id int) {
+	quantityy := <-q // channel from get_items
+	newQuantity := quantityy - quantity
 	if newQuantity < 0 {
 		c <- 0
 		return
@@ -53,19 +54,23 @@ func insertingex(n chan string, e chan int, quantity int, id int, name string) {
 	db.Exec("INSERT INTO export(name, quantity, expdate,id,user) VALUES (?, ?, ?, ?, ?)", product, quantity, expdate, id, name)
 }
 
-func going_out(end chan int, name string, productId int, orderQuantity int) {
+func going_out(end chan int, name string, id int, quantity int) {
 	// fmt.Printf("start\n")
 	start := time.Now()
 	c := make(chan int)
 	q := make(chan int)
 	e := make(chan int)
 	n := make(chan string)
-	mutex.Lock()
-	go get_items(q, e, n, productId)
-	go decrement(q, c, orderQuantity, productId)
-	<-c // wait for all go routines
-	mutex.Unlock()
-	go insertingex(n, e, orderQuantity, productId, name)
+	if rowExists("SELECT * FROM items WHERE id = ?", id) {
+		mutex.Lock()
+		go get_items(q, e, n, id)
+		go decrement(q, c, quantity, id)
+		<-c // wait for all go routines
+		mutex.Unlock()
+	} else {
+		return
+	}
+	go insertingex(n, e, quantity, id, name)
 	fmt.Printf("time: %v\n", time.Since(start))
 
 	num, _ := strconv.Atoi(name)
@@ -90,23 +95,38 @@ func insertingim(n chan string, e chan int, quantity int, id int, name string) {
 	db.Exec("INSERT INTO import(name, quantity, expdate,id,user) VALUES (?, ?, ?, ?, ?)", product, quantity, expdate, id, name)
 }
 
-func going_in(end chan int, name string, productId int, orderQuantity int) {
+func going_in(end chan int, name string, id int, quantity int) {
 	start := time.Now()
 	c := make(chan int)
 	q := make(chan int)
 	e := make(chan int)
 	n := make(chan string)
-	mutex.Lock()
-	go get_items(q, e, n, productId)
-	go increment(q, c, orderQuantity, productId)
-	<-c // wait for all go routines
-	mutex.Unlock()
-	go insertingim(n, e, orderQuantity, productId, name)
+	if rowExists("SELECT * FROM items WHERE id = ?", id) {
+		mutex.Lock()
+		go get_items(q, e, n, id)
+		go increment(q, c, quantity, id)
+		<-c // wait for all go routines
+		mutex.Unlock()
+	} else {
+		insertingitem("New items",quantity,0,id)
+	}
+
+	go insertingim(n, e, quantity, id, name)
 	fmt.Printf("time: %v\n", time.Since(start))
 
 	num, _ := strconv.Atoi(name)
 	end <- num
 	return
+}
+
+func rowExists(query string, args ...interface{}) bool {
+	var exists bool
+	query = fmt.Sprintf("SELECT exists (%s)", query)
+	err := db.QueryRow(query, args...).Scan(&exists)
+	if err != nil && err != sql.ErrNoRows {
+		glog.Fatalf("error checking if row exists '%s' %v", args, err)
+	}
+	return exists
 }
 
 func insertingitem(name string, quantity int, expdate int, id int) {
@@ -117,16 +137,22 @@ func main() {
 	db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
 	//defer db.Close()
 	// insertingitem("TV",1000,0,3)
-	n := 100
-	end := make(chan int, n)
+	n := 70
+	endin := make(chan int, n)
+	endout := make(chan int, n)
 	start2 := time.Now()
 
 	for i := 0; i < n; i++ {
-		go going_out(end, strconv.Itoa(i), 1, 1)
-		go going_in(end, strconv.Itoa(i), 1, 1)
+		go going_out(endout, strconv.Itoa(i), 3, 1)
 	}
 	for i := 0; i < n; i++ {
-		<-end
+		go going_in(endin, strconv.Itoa(i), 1, 1)
+	}
+	for i := 0; i < n; i++ {
+		<-endin
+	}
+	for i := 0; i < n; i++ {
+		<-endout
 	}
 	fmt.Printf("Total time: %v\n", time.Since(start2))
 
