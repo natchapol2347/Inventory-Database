@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"sync"
 	"time"
-	"github.com/golang/glog"
-	_ "github.com/go-sql-driver/mysql"
 
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/golang/glog"
 )
 
 var (
@@ -43,7 +43,7 @@ func decrement(q chan int, c chan int, quantity int, id int) {
 		c <- 0
 		return
 	}
-	fmt.Println("Product left in stock: ", newQuantity)
+	fmt.Println("the items left in stock: ", newQuantity)
 	db.Exec("update items set quantity = ? where id = ? ", newQuantity, id)
 	c <- 0
 }
@@ -85,7 +85,7 @@ func increment(q chan int, c chan int, quantity int, id int) {
 		c <- 0
 		return
 	}
-	fmt.Println("Product left in stock: ", newQuantity)
+	fmt.Println("the items left in stock: ", newQuantity)
 	db.Exec("update items set quantity = ? where id = ? ", newQuantity, id)
 	c <- 0
 }
@@ -108,7 +108,7 @@ func going_in(end chan int, name string, id int, quantity int) {
 		<-c // wait for all go routines
 		mutex.Unlock()
 	} else {
-		insertingitem("New items",quantity,0,id)
+		insertingitem("New items", quantity, 0, id)
 	}
 
 	go insertingim(n, e, quantity, id, name)
@@ -133,15 +133,76 @@ func insertingitem(name string, quantity int, expdate int, id int) {
 	db.Exec("INSERT INTO items(name,quantity,expdate,id) VALUES (?,?,?,?)", name, quantity, expdate, id)
 }
 
+func show_current() {
+	rows, err := db.Query("SELECT * FROM items")
+	if err != nil {
+		panic(err)
+	}
+	for rows.Next() {
+		var name string
+		var quantity int
+		var expdate int
+		var id int
+		err = rows.Scan(&name, &quantity, &expdate, &id)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("name: ", name, " quantity: ", quantity, " expdate: ", expdate, "id: ", id,"\n")
+	}
+}
+
+func show_record_in() {
+	rows, err := db.Query("SELECT * FROM import")
+	if err != nil {
+		panic(err)
+	}
+	for rows.Next() {
+		var name string
+		var quantity int
+		var expdate int
+		var id int
+		var user string
+		err = rows.Scan(&name, &quantity, &expdate, &id, &user)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("name: ", name, " quantity: ", quantity, " expdate: ", expdate, "id: ", id,"user: ", user,"\n")
+	}
+}
+
+func show_record_out() {
+	rows, err := db.Query("SELECT * FROM export")
+	if err != nil {
+		panic(err)
+	}
+	for rows.Next() {
+		var name string
+		var quantity int
+		var expdate int
+		var id int
+		var user string
+		err = rows.Scan(&name, &quantity, &expdate, &id, &user)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("name: ", name, " quantity: ", quantity, " expdate: ", expdate, "id: ", id,"user: ", user,"\n")
+	}
+}
+
 func main() {
 	db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
 	//defer db.Close()
 	// insertingitem("TV",1000,0,3)
-	n := 70
+	n := 50
 	endin := make(chan int, n)
 	endout := make(chan int, n)
 	start2 := time.Now()
 
+	// for i := 0; i < n; i++ {
+	// 	go show_record_in()
+	// 	go show_record_out()
+	// 	go show_current()
+	// }
 	for i := 0; i < n; i++ {
 		go going_out(endout, strconv.Itoa(i), 3, 1)
 	}
@@ -155,6 +216,6 @@ func main() {
 		<-endout
 	}
 	fmt.Printf("Total time: %v\n", time.Since(start2))
-
+	
 	return
 }
