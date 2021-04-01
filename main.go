@@ -14,8 +14,9 @@ import (
 
 // Person is an object to collect person data
 type ProductItem struct {
-	Name string
-	Age  int
+	ItemCode string
+	ItemName string
+	qty  int
 }
 
 func main2() {
@@ -97,8 +98,50 @@ func main() {
 
 } // .end main
 
+func checkin(itmNo string, qty int16) {
+	//
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Print("Enter Item Code: ")
+    itemCode, _ := reader.ReadString('\n')
+	
+    
+	fmt.Print("Enter Qty: ")
+    qty, _ := reader.ReadString('\n')
+
+	go connectToCheckin()
+
+	// print display on screen
+	fmt.Printf("Item added %s\n", itemCode)
+
+} //. End checkin
+
+func connectToChekcin(){
+
+}
+
+func connectToChekcout(){
+	
+}
+
 func checkout(itmNo string, qty int16) {
 	//
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Print("Enter Item Code: ")
+    itemCode, _ := reader.ReadString('\n')
+	
+	fmt.Print("Enter Item Name: ")
+    itemName, _ := reader.ReadString('\n')
+    
+	fmt.Print("Enter Qty: ")
+    qty, _ := reader.ReadString('\n')
+
+
+	go connectToCheckout()
+
+	// print display on screen
+	fmt.Printf("Item got %s\n", itemCode)
 
 } //. End checkout
 
