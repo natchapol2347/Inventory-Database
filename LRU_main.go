@@ -2,8 +2,8 @@ package main
 
 import (
 
-	"errors"
-	"fmt"
+	// "errors"
+	// "fmt"
 	// "log"
 	// "mime/multipart"
 	"sync"
@@ -24,7 +24,7 @@ type cacheItem struct {
 	prev	 *cacheItem
 }
 
-func New(c uint16) *Cache {
+func newCache(c uint16) *Cache {
 	return &Cache{
 		capacity: c,
 		items:    make(map[string]*cacheItem),
@@ -34,13 +34,25 @@ func New(c uint16) *Cache {
 	}
 }
 
+
 func (c *Cache) insert_tail(newItem *cacheItem){
 	if(c.tail == nil){
 		c.tail = newItem
 		c.head = newItem
 
 	}else{
-		current = 
+		current := c.head
+		for(current.prev.prev != nil){
+			temp := current.prev
+			current.prev = current.prev.prev
+			current = temp	 
+		}
 	}
+
+}
+
+func main(){
+	x := New(3)
+	x.insert_tail = 
 
 }
