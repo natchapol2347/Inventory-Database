@@ -3,7 +3,7 @@ package main
 import (
 
 	// "errors"
-	// "fmt"
+	"fmt"
 	// "log"
 	// "mime/multipart"
 	"sync"
@@ -34,7 +34,13 @@ func newCache(c uint16) *Cache {
 	}
 }
 
-
+func newItem(key uint32, value uint32) *cacheItem{
+	return &cacheItem{
+		quantity: value,
+		next: nil,
+		prev: nil,
+	}
+}
 func (c *Cache) insert_tail(newItem *cacheItem){
 	if(c.tail == nil){
 		c.tail = newItem
@@ -47,12 +53,20 @@ func (c *Cache) insert_tail(newItem *cacheItem){
 			current.prev = current.prev.prev
 			current = temp	 
 		}
+
+		c.tail = newItem
 	}
 
 }
-
+func (c *Cache) printCache(){
+	for key, item := range c.items{
+		fmt.Printf("%d : %d", key, item.quantity)
+		fmt.Println("hey boyt")
+	}
+}
 func main(){
-	x := New(3)
-	x.insert_tail = 
-
+	x := newCache(3)
+	y := newItem(0123,5000)
+	x.insert_tail(y)
+	x.printCache()
 }
