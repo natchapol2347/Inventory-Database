@@ -4,14 +4,14 @@ import "fmt"
 
 // Qnode ...
 type Qnode struct {
-	key, value int
+	serial, quantity int
 	prev, next *Qnode
 }
 
 func addQNode(key int, value int) *Qnode {
 	return &Qnode{
-		key:   key,
-		value: value,
+		serial:   key,
+		quantity: value,
 		prev:  nil,
 		next:  nil,
 	}
@@ -86,20 +86,20 @@ func (lru *LRUCache) get(key int) int {
 	if _, found := lru.pageMap[key]; !found {
 		return -1
 	}
-	val := lru.pageMap[key].value
+	val := lru.pageMap[key].quantity
 	lru.pageList.moveToFront(lru.pageMap[key])
 	return val
 }
 
 func (lru *LRUCache) put(key int, value int) {
 	if _, found := lru.pageMap[key]; found {
-		lru.pageMap[key].value = value
+		lru.pageMap[key].quantity = value
 		lru.pageList.moveToFront(lru.pageMap[key])
 		return
 	}
 
 	if lru.size == lru.capacity {
-		key := lru.pageList.getRear().key
+		key := lru.pageList.getRear().serial
 		lru.pageList.removeRear()
 		lru.size--
 		delete(lru.pageMap, key)
