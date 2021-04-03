@@ -11,37 +11,41 @@ import (
 )
 
 type Cache struct {
-	capacity uint16
-	items    map[string]*cacheItem
+	capacity int
+	size int
+	items    map[int]*cacheItem
 	mu       sync.Mutex
 	head     *cacheItem
 	tail     *cacheItem
 }
 
 type cacheItem struct {
-	quantity uint32
+	serial   int
+	quantity int
 	next     *cacheItem
 	prev	 *cacheItem
 }
 
-func newCache(c uint16) *Cache {
+func newCache(c int) *Cache {
 	return &Cache{
 		capacity: c,
-		items:    make(map[string]*cacheItem),
+		size: 0,
+		items:    make(map[int]*cacheItem),
 		mu:       sync.Mutex{},
 		head:     nil,
 		tail: 	  nil,
 	}
 }
 
-func newItemNode(key uint32, value uint32) *cacheItem{
+func newItemNode(key int, value int) *cacheItem{
 	return &cacheItem{
+		serial: key,
 		quantity: value,
 		next: nil,
 		prev: nil,
 	}
 }
-func (c *Cache) insert_tail(key uint32, value uint32) *cacheItem{
+func (c *Cache) insert_tail(key int, value int) *cacheItem{
 	//make new item from argument
 	newItem := newItemNode(key, value)
 	if(c.tail == nil && c.head == nil){
@@ -89,11 +93,53 @@ func (c *Cache) pop(){
 // 	}
 // }
 
-func (c *Cache) get(key int)
+func (c *Cache) get(key int, load int) int{
+	if _, ok := c.items[key]; ok{
+		value := c.items[key].quantity
+		if(value - load < 0){
+			fmt.Println("not enough in stock")
+			return 0 //error handling might change in the future
+			
+		}
+		c.moveToFront(c.items[key])
+		c.items[key].quantity -= load 
+		fmt.Println("The quantity remaining is", value - load )
+		return value
+	}else{
+		//if there's no key
+		fmt.Println("there's no key", key, "yet")
+		return 0 //error handiling might change in the future
+	}
+}
 
-func main(){
-	x := newCache(3)
-	y := newItem(0123,5000)
-	x.insert_tail(y)
-	x.printCache()
+func (c *Cache) put(key int, load int) {
+	if _, ok := c.items[key]; ok {
+		c.items[key].quantity += load
+		c.moveToFront(c.items[key])
+		return
+	}
+
+	if c.size == c.capacity {
+		delKey := c.head.serial
+		c.pop()
+		c.size--
+		delete(c.items, delKey)
+	}
+	page := c.insert_tail(key, load)
+	c.size++
+	c.items[key] = page
+}
+
+func main() {
+	cache := newCache(2)
+	cache.put(2, 2)
+	cache.get(2,100)
+	cache.get(1,100)
+	cache.put(1, 1)
+	cache.put(1, 5)
+	cache.get(1, 5)
+	cache.get(2,25)
+	cache.put(8, 8)
+	cache.get(1, 3)
+	cache.get(8, 5)
 }

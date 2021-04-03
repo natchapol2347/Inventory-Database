@@ -95,20 +95,20 @@ func (c *Cache) Get(k string) (int, error) {
 	return 0, errors.New("Key not found")
 }
 
-func main(){
-	//user adds 5 items to cache
-	start := time.Now()
-	itemCache := New(5)
-	itemCache.Set("banana",234)
-	itemCache.Set("doll",235)
-	itemCache.Set("steak",236)
-	itemCache.Set("ball",237)
-	itemCache.Set("tv",239)
-	itemCache.Set("banana",234)
-	//call Get() and Set() everytime user imports or exports
-	fmt.Println(itemCache.Get("banana"))
-	itemCache.Set("banana",234)
-	elapsed := time.Since(start)
-	log.Printf("LRU took %s", elapsed)
+// func main(){
+// 	//user adds 5 items to cache
+// 	start := time.Now()
+// 	itemCache := New(5)
+// 	itemCache.Set("banana",234)
+// 	itemCache.Set("doll",235)
+// 	itemCache.Set("steak",236)
+// 	itemCache.Set("ball",237)
+// 	itemCache.Set("tv",239)
+// 	itemCache.Set("banana",234)
+// 	//call Get() and Set() everytime user imports or exports
+// 	fmt.Println(itemCache.Get("banana"))
+// 	itemCache.Set("banana",234)
+// 	elapsed := time.Since(start)
+// 	log.Printf("LRU took %s", elapsed)
 
-}
+// }

@@ -109,17 +109,17 @@ func (lru *LRUCache) put(key int, value int) {
 	lru.pageMap[key] = page
 }
 
-func main() {
-	var cache LRUCache
-	cache.initLru(2)
-	cache.put(2, 2)
-	fmt.Println(cache.get(2))
-	fmt.Println(cache.get(1))
-	cache.put(1, 1)
-	cache.put(1, 5)
-	fmt.Println(cache.get(1))
-	fmt.Println(cache.get(2))
-	cache.put(8, 8)
-	fmt.Println(cache.get(1))
-	fmt.Println(cache.get(8))
-}
+// func main() {
+// 	var cache LRUCache
+// 	cache.initLru(2)
+// 	cache.put(2, 2)
+// 	fmt.Println(cache.get(2))
+// 	fmt.Println(cache.get(1))
+// 	cache.put(1, 1)
+// 	cache.put(1, 5)
+// 	fmt.Println(cache.get(1))
+// 	fmt.Println(cache.get(2))
+// 	cache.put(8, 8)
+// 	fmt.Println(cache.get(1))
+// 	fmt.Println(cache.get(8))
+// }
