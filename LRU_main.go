@@ -34,36 +34,60 @@ func newCache(c uint16) *Cache {
 	}
 }
 
-func newItem(key uint32, value uint32) *cacheItem{
+func newItemNode(key uint32, value uint32) *cacheItem{
 	return &cacheItem{
 		quantity: value,
 		next: nil,
 		prev: nil,
 	}
 }
-func (c *Cache) insert_tail(newItem *cacheItem){
-	if(c.tail == nil){
+func (c *Cache) insert_tail(key uint32, value uint32) *cacheItem{
+	//make new item from argument
+	newItem := newItemNode(key, value)
+	if(c.tail == nil && c.head == nil){
 		c.tail = newItem
 		c.head = newItem
 
 	}else{
-		current := c.head
-		for(current.prev.prev != nil){
-			temp := current.prev
-			current.prev = current.prev.prev
-			current = temp	 
-		}
-
+		newItem.next = c.tail
+		c.tail.prev = newItem
 		c.tail = newItem
 	}
 
+	return newItem
+
 }
-func (c *Cache) printCache(){
-	for key, item := range c.items{
-		fmt.Printf("%d : %d", key, item.quantity)
-		fmt.Println("hey boyt")
+
+func (c *Cache) moveToFront(node *cacheItem){
+	if node == c.tail{
+		return 
+	}else if node == c.head{
+		c.head = c.head.prev
+		//last node's next must point to nil
+		c.head.next = nil 
+	}
+
+	node.next = c.tail
+	c.tail.prev = node
+	c.tail = node
+}
+
+func (c *Cache) pop(){
+	if c.head == nil && c.tail == nil{
+		return
+	}else if c.head == c.tail{
+		c.head, c.tail = nil, nil
+	}else{
+		
 	}
 }
+// func (c *Cache) printCache(){
+// 	for key, item := range c.items{
+// 		fmt.Printf("%d : %d", key, item.quantity)
+// 		fmt.Println("hey boyt")
+// 	}
+// }
+
 func main(){
 	x := newCache(3)
 	y := newItem(0123,5000)
