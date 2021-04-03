@@ -78,7 +78,8 @@ func (c *Cache) pop(){
 	}else if c.head == c.tail{
 		c.head, c.tail = nil, nil
 	}else{
-		
+		c.head = c.head.prev
+		c.head.next = nil
 	}
 }
 // func (c *Cache) printCache(){
@@ -87,6 +88,8 @@ func (c *Cache) pop(){
 // 		fmt.Println("hey boyt")
 // 	}
 // }
+
+func (c *Cache) get(key int)
 
 func main(){
 	x := newCache(3)
