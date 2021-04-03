@@ -6,9 +6,11 @@ import (
 	"strconv"
 	"sync"
 	"time"
+	"log"
 
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/golang/glog"
+	_"github.com/go-sql-driver/mysql"
+	// "github.com/golang/glog"
+
 )
 
 var (
@@ -124,7 +126,7 @@ func rowExists(query string, args ...interface{}) bool {
 	query = fmt.Sprintf("SELECT exists (%s)", query)
 	err := db.QueryRow(query, args...).Scan(&exists)
 	if err != nil && err != sql.ErrNoRows {
-		glog.Fatalf("error checking if row exists '%s' %v", args, err)
+		log.Fatal("error checking if row exists '%s' %v", args, err)
 	}
 	return exists
 }
@@ -200,7 +202,7 @@ func show_record_out(endrec chan int, name string) {
 
 func main() {
 	db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
-	//defer db.Close()
+	// defer db.Close()
 	// insertingitem("TV",1000,0,3)
 	n := 10
 	endin := make(chan int, n)
