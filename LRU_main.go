@@ -93,22 +93,21 @@ func (c *Cache) pop(){
 // 	}
 // }
 
-func (c *Cache) get(key int, load int) int{
+func (c *Cache) get(key int, load int) (int,int){
 	if _, ok := c.items[key]; ok{
 		value := c.items[key].quantity
 		if(value - load < 0){
 			fmt.Println("not enough in stock")
-			return 0 //error handling might change in the future
-			
+			return -1,-1
 		}
 		c.moveToFront(c.items[key])
 		c.items[key].quantity -= load 
 		fmt.Println("The quantity remaining is", value - load )
-		return value
+		return key, value-load
 	}else{
 		//if there's no key
 		fmt.Println("there's no key", key, "yet")
-		return 0 //error handiling might change in the future
+		return -1,-1
 	}
 }
 
@@ -142,4 +141,5 @@ func main() {
 	cache.put(8, 8)
 	cache.get(1, 3)
 	cache.get(8, 5)
+	cache.put(2,500)
 }
