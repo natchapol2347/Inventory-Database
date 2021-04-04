@@ -69,6 +69,9 @@ func (c *Cache) moveToFront(node *cacheItem){
 		c.head = c.head.prev
 		//last node's next must point to nil
 		c.head.next = nil 
+	}else{
+		node.prev.next = node.next
+		node.next.prev = node.prev
 	}
 
 	node.next = c.tail
@@ -86,27 +89,32 @@ func (c *Cache) pop(){
 		c.head.next = nil
 	}
 }
-// func (c *Cache) printCache(){
-// 	for key, item := range c.items{
-// 		fmt.Printf("%d : %d", key, item.quantity)
-// 		fmt.Println("hey boyt")
-// 	}
-// }
+func (c *Cache) printCache(){
+	current := c.tail
+	var i int;
+	for i=0;i<=c.size;i++{
+		if(current != nil){		
+			fmt.Printf("id:%d|,quantity:%d|size:%d| ->", current.serial, current.quantity,c.size)
+			current = current.next
+		}
+	}
+	fmt.Println("\n")
+}
+
 
 func (c *Cache) get(key int, load int) (int,int){
 	if _, ok := c.items[key]; ok{
 		value := c.items[key].quantity
 		if(value - load < 0){
-			fmt.Println("not enough in stock")
+			// fmt.Println("not enough in stock")
 			return -1,-1
 		}
 		c.moveToFront(c.items[key])
 		c.items[key].quantity -= load 
-		fmt.Println("The quantity remaining is", value - load )
 		return key, value-load
 	}else{
 		//if there's no key
-		fmt.Println("there's no key", key, "yet")
+		// fmt.Println("there's no key", key, "yet")
 		return -1,-1
 	}
 }
@@ -130,16 +138,29 @@ func (c *Cache) put(key int, load int) {
 }
 
 func main() {
-	cache := newCache(2)
-	cache.put(2, 2)
-	cache.get(2,100)
-	cache.get(1,100)
-	cache.put(1, 1)
-	cache.put(1, 5)
-	cache.get(1, 5)
-	cache.get(2,25)
-	cache.put(8, 8)
-	cache.get(1, 3)
-	cache.get(8, 5)
-	cache.put(2,500)
+	cache := newCache(3)
+	// cache.put(2, 2)
+	// cache.get(2,100)
+	// cache.get(1,100)
+	// cache.put(1, 1)
+	// cache.put(1, 5)
+	// cache.get(1, 5)
+	// cache.get(2,25)
+	// cache.put(8, 8)
+	// cache.get(1, 3)
+	// cache.get(8, 5)
+	// cache.put(2,500)
+	// cache.get(2,400)
+	// cache.printCache()
+	cache.put(1,4)
+	cache.printCache()
+	cache.put(2,45)
+	cache.printCache()
+	cache.put(23,3247)
+	cache.printCache()
+	cache.get(2,30)
+	cache.printCache()
+	cache.put(50,223)
+	cache.printCache()
+
 }
