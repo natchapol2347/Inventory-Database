@@ -119,12 +119,19 @@ func (c *Cache) get(end chan int, name string, key int, load int) (string, int,i
 		}
 		c.moveToFront(c.items[key])
 		c.items[key].quantity -= load 
-		go going_out(end, name, key, load)
+		go going_out(nil,end, name, key, load)
 		return name, key, value-load
 	}else{
 		//if there's no key
 		// fmt.Println("there's no key", key, "yet")
-		return "",-1,-1
+		x := make(chan bool) 
+		go going_out(x, end, name, key, load)
+		var ifIn bool = <-x 
+		if(ifIn){
+			return "",-1,-1
+		}
+		c.put(end, name, key, load)
+		return name,key, c.items[key].quantity
 	}
 }
 
@@ -133,12 +140,11 @@ func (c *Cache) put(end chan int, name string,key int, load int) {
 	if _, ok := c.items[key]; ok {
 		c.items[key].quantity += load
 		c.moveToFront(c.items[key])
-		go going_in(end, name, key, load)
+		go going_in(nil,end, name, key, load)
 		return
 	}
 	//if cache is full delete last recent node
 	if c.size == c.capacity {
-		fmt.Println("he")
 		delKey := c.head.serial
 		c.pop()
 		c.size--
@@ -148,8 +154,7 @@ func (c *Cache) put(end chan int, name string,key int, load int) {
 	page := c.insert_tail(name, key, load)
 	c.size++
 	c.items[key] = page
-	go going_in(end, name, key, load)
-	fmt.Println("hi")
+	go going_in(nil,end, name, key, load)
 
 }
 
@@ -178,7 +183,6 @@ func get_items(q chan int, e chan int, n chan string, id int) {
 		q <- quantity
 		n <- name
 		e <- expdate
-		fmt.Println("name: ", name, " quantity: ", quantity, " expdate: ", expdate)
 	}
 }
 func decrement(q chan int, c chan int, quantity int, id int) {
@@ -199,7 +203,7 @@ func insertingex(n chan string, e chan int, quantity int, id int, name string) {
 	db.Exec("INSERT INTO export(name, quantity, expdate,id,user) VALUES (?, ?, ?, ?, ?)", product, quantity, expdate, id, name)
 }
 
-func going_out(end chan int, name string, id int, quantity int) {
+func going_out(cacheEnd chan bool, end chan int, name string, id int, quantity int) {
 	// fmt.Printf("start\n")
 	start := time.Now()
 	c := make(chan int)
@@ -213,6 +217,8 @@ func going_out(end chan int, name string, id int, quantity int) {
 		<-c // wait for all go routines
 		mutex.Unlock()
 	} else {
+		fmt.Println("it's not in db")
+		cacheEnd <- false
 		return
 	}
 	go insertingex(n, e, quantity, id, name)
@@ -220,6 +226,7 @@ func going_out(end chan int, name string, id int, quantity int) {
 
 	num, _ := strconv.Atoi(name)
 	end <- num
+	cacheEnd <-false
 	return
 }
 
@@ -240,13 +247,12 @@ func insertingim(n chan string, e chan int, quantity int, id int, name string) {
 	db.Exec("INSERT INTO import(name, quantity, expdate,id,user) VALUES (?, ?, ?, ?, ?)", product, quantity, expdate, id, name)
 }
 
-func going_in(end chan int, name string, id int, quantity int) {
+func going_in(cacheEnd chan bool,end chan int, name string, id int, quantity int) {
 	c := make(chan int)
 	q := make(chan int)
 	e := make(chan int)
 	n := make(chan string)
 	if rowExists("SELECT * FROM items WHERE id = ?", id) {
-		fmt.Println("yelo")
 		mutex.Lock()
 		go get_items(q, e, n, id)
 		go increment(q, c, quantity, id)
@@ -254,18 +260,16 @@ func going_in(end chan int, name string, id int, quantity int) {
 		mutex.Unlock()
 	} else {
 		insertingitem("New  with id "+strconv.Itoa(id), quantity, 0, id)
-		fmt.Println("fuck")
-
-
+		cacheEnd <- false
+		
 	}
-
 	go insertingim(n, e, quantity, id, name)
 	// fmt.Printf("time: %v\n", time.Since(start))
 
 	num, _ := strconv.Atoi(name)
 	end <- num
-	fmt.Println("yolo")
-	return
+	cacheEnd <- true
+	return 
 }
 
 func rowExists(query string, args ...interface{}) bool {
@@ -281,7 +285,6 @@ func rowExists(query string, args ...interface{}) bool {
 func insertingitem(name string, quantity int, expdate int, id int) {
 	
 	db.Exec("INSERT INTO items(name,quantity,expdate,id) VALUES (?,?,?,?)", name, quantity, expdate, id)
-	fmt.Println("im in")
 }
 
 func show_current(endrec chan int, name string) {
@@ -353,12 +356,14 @@ func main(){
 	db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
 	defer db.Close()
 	// insertingitem("fruit",100,29,3)
-	c:= make(chan int)
+	c:= make(chan int,100)
 
 	cache:= newCache(5)
 
 	cache.put(c,"fruit", 1, 30)
-	
+	cache.get(c,"wig",55, 40)
+	cache.get(c,"fruit",1,10)
+	cache.get(c,"album",23,90)
 	<- c
 	cache.printCache()
 }
