@@ -6,11 +6,9 @@ import (
 	"strconv"
 	"sync"
 	"time"
-	"log"
 
-	_"github.com/go-sql-driver/mysql"
-	// "github.com/golang/glog"
-
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/golang/glog"
 )
 
 var (
@@ -38,7 +36,7 @@ func get_items(q chan int, e chan int, n chan string, id int) {
 		fmt.Println("name: ", name, " quantity: ", quantity, " expdate: ", expdate)
 	}
 }
-func decrement(q chan int, c chan int, quantity int, id int) {
+func minus(q chan int, c chan int, quantity int, id int) {
 	quantityy := <-q // channel from get_items
 	newQuantity := quantityy - quantity
 	if newQuantity < 0 {
@@ -66,7 +64,7 @@ func going_out(end chan int, name string, id int, quantity int) {
 	if rowExists("SELECT * FROM items WHERE id = ?", id) {
 		mutex.Lock()
 		go get_items(q, e, n, id)
-		go decrement(q, c, quantity, id)
+		go minus(q, c, quantity, id)
 		<-c // wait for all go routines
 		mutex.Unlock()
 	} else {
@@ -80,7 +78,7 @@ func going_out(end chan int, name string, id int, quantity int) {
 	return
 }
 
-func increment(q chan int, c chan int, quantity int, id int) {
+func plus(q chan int, c chan int, quantity int, id int) {
 	quantityy := <-q // channel from get_items
 	newQuantity := quantityy + quantity
 	if newQuantity < 0 {
@@ -106,7 +104,7 @@ func going_in(end chan int, name string, id int, quantity int) {
 	if rowExists("SELECT * FROM items WHERE id = ?", id) {
 		mutex.Lock()
 		go get_items(q, e, n, id)
-		go increment(q, c, quantity, id)
+		go plus(q, c, quantity, id)
 		<-c // wait for all go routines
 		mutex.Unlock()
 	} else {
@@ -126,7 +124,7 @@ func rowExists(query string, args ...interface{}) bool {
 	query = fmt.Sprintf("SELECT exists (%s)", query)
 	err := db.QueryRow(query, args...).Scan(&exists)
 	if err != nil && err != sql.ErrNoRows {
-		log.Fatal("error checking if row exists '%s' %v", args, err)
+		glog.Fatalf("error checking if row exists '%s' %v", args, err)
 	}
 	return exists
 }
@@ -202,7 +200,7 @@ func show_record_out(endrec chan int, name string) {
 
 func main() {
 	db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
-	// defer db.Close()
+	//defer db.Close()
 	// insertingitem("TV",1000,0,3)
 	n := 10
 	endin := make(chan int, n)
