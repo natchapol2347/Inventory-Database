@@ -13,6 +13,7 @@ import (
 	"strings"
 )
 
+
 //Old file of client
 func main() {
 	con, err := net.Dial("tcp", "0.0.0.0:9999")
@@ -30,7 +31,8 @@ func main() {
 				log.Printf("failed to send the client request: %v\n", err)
 			}
 		
- 
+
+		
 		// Waiting for the server response
 		serverResponse, err := serverReader.ReadString('\n')
  
