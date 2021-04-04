@@ -14,16 +14,18 @@ type Cache struct {
 	capacity int
 	size int
 	items    map[int]*cacheItem
-	mu       sync.Mutex
 	head     *cacheItem
 	tail     *cacheItem
 }
 
 type cacheItem struct {
+	name     string
 	serial   int
 	quantity int
 	next     *cacheItem
 	prev	 *cacheItem
+	mu       sync.Mutex
+
 }
 
 func newCache(c int) *Cache {
@@ -31,23 +33,25 @@ func newCache(c int) *Cache {
 		capacity: c,
 		size: 0,
 		items:    make(map[int]*cacheItem),
-		mu:       sync.Mutex{},
 		head:     nil,
 		tail: 	  nil,
 	}
 }
 
-func newItemNode(key int, value int) *cacheItem{
+func newItemNode(in_name string, key int, value int) *cacheItem{
 	return &cacheItem{
+		name: in_name,
 		serial: key,
 		quantity: value,
 		next: nil,
 		prev: nil,
+		mu :     sync.Mutex{},
+
 	}
 }
-func (c *Cache) insert_tail(key int, value int) *cacheItem{
+func (c *Cache) insert_tail(name string, key int, value int) *cacheItem{
 	//make new item from argument
-	newItem := newItemNode(key, value)
+	newItem := newItemNode(name,key, value)
 	if(c.tail == nil && c.head == nil){
 		c.tail = newItem
 		c.head = newItem
@@ -94,7 +98,7 @@ func (c *Cache) printCache(){
 	var i int;
 	for i=0;i<=c.size;i++{
 		if(current != nil){		
-			fmt.Printf("id:%d|,quantity:%d|size:%d| ->", current.serial, current.quantity,c.size)
+			fmt.Printf("|name:%s|id:%d|,quantity:%d|size:%d| ->", current.name, current.serial, current.quantity,c.size)
 			current = current.next
 		}
 	}
@@ -102,7 +106,7 @@ func (c *Cache) printCache(){
 }
 
 
-func (c *Cache) get(key int, load int) (int,int){
+func (c *Cache) get(name string, key int, load int) (int,int){
 	if _, ok := c.items[key]; ok{
 		value := c.items[key].quantity
 		if(value - load < 0){
@@ -119,7 +123,7 @@ func (c *Cache) get(key int, load int) (int,int){
 	}
 }
 
-func (c *Cache) put(key int, load int) {
+func (c *Cache) put(name string, key int, load int) {
 	if _, ok := c.items[key]; ok {
 		c.items[key].quantity += load
 		c.moveToFront(c.items[key])
@@ -132,7 +136,7 @@ func (c *Cache) put(key int, load int) {
 		c.size--
 		delete(c.items, delKey)
 	}
-	page := c.insert_tail(key, load)
+	page := c.insert_tail(name, key, load)
 	c.size++
 	c.items[key] = page
 }
@@ -152,15 +156,15 @@ func main() {
 	// cache.put(2,500)
 	// cache.get(2,400)
 	// cache.printCache()
-	cache.put(1,4)
+	cache.put("toy",1,4)
 	cache.printCache()
-	cache.put(2,45)
+	cache.put("diamond",2,45)
 	cache.printCache()
-	cache.put(23,3247)
+	cache.put("gucci",23,3247)
 	cache.printCache()
-	cache.get(2,30)
+	cache.get("diamond",2,30)
 	cache.printCache()
-	cache.put(50,223)
+	cache.put("car",50,223)
 	cache.printCache()
 
 }

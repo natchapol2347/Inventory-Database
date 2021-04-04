@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"time"
 	"log"
-
 	_"github.com/go-sql-driver/mysql"
 	// "github.com/golang/glog"
 
@@ -103,7 +102,7 @@ func (c *Cache) printCache(){
 	var i int;
 	for i=0;i<=c.size;i++{
 		if(current != nil){		
-			fmt.Printf("id:%d|,quantity:%d|size:%d| ->", current.serial, current.quantity,c.size)
+			fmt.Printf("|name:%s|id:%d|,quantity:%d|size:%d| ->", current.name, current.serial, current.quantity,c.size)
 			current = current.next
 		}
 	}
@@ -148,7 +147,7 @@ func (c *Cache) put(end chan int, name string,key int, load int) {
 	c.size++
 	c.items[key] = page
 	go going_in(end, name, key, load)
-	
+
 }
 
 
@@ -239,7 +238,6 @@ func insertingim(n chan string, e chan int, quantity int, id int, name string) {
 }
 
 func going_in(end chan int, name string, id int, quantity int) {
-	start := time.Now()
 	c := make(chan int)
 	q := make(chan int)
 	e := make(chan int)
@@ -255,7 +253,7 @@ func going_in(end chan int, name string, id int, quantity int) {
 	}
 
 	go insertingim(n, e, quantity, id, name)
-	fmt.Printf("time: %v\n", time.Since(start))
+	// fmt.Printf("time: %v\n", time.Since(start))
 
 	num, _ := strconv.Atoi(name)
 	end <- num
@@ -350,5 +348,7 @@ func main(){
 	cache:= newCache(5)
 
 	cache.put(c,"fruit", 1, 30)
-
+	
+	<- c
+	cache.printCache()
 }
