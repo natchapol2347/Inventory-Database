@@ -133,6 +133,7 @@ func Insertingitem(name string, quantity int, expdate int, id int) {
 	db.Exec("INSERT INTO items(name,quantity,expdate,id) VALUES (?,?,?,?)", name, quantity, expdate, id)
 }
 
+//Check current items
 func Show_current(endrec chan int, name string) {
 	rows, err := db.Query("SELECT * FROM items")
 	if err != nil {
@@ -144,6 +145,7 @@ func Show_current(endrec chan int, name string) {
 		var quantity int
 		var expdate int
 		var id int
+		
 		err = rows.Scan(&name, &quantity, &expdate, &id)
 		if err != nil {
 			panic(err)
