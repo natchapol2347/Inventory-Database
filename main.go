@@ -19,84 +19,64 @@ type ProductItem struct {
 	qty  int
 }
 
-func main2() {
-	con, err := net.Dial("tcp", "0.0.0.0:9999")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer con.Close()
 
-	clientReader := bufio.NewReader(os.Stdin)
-	serverReader := bufio.NewReader(con)
-
-	for {
-		// Waiting for the client request
-		clientRequest, err := clientReader.ReadString('\n')
-
-		switch err {
-		case nil:
-			clientRequest := strings.TrimSpace(clientRequest)
-			if _, err = con.Write([]byte(clientRequest + "\n")); err != nil {
-				log.Printf("failed to send the client request: %v\n", err)
-			}
-		case io.EOF:
-			log.Println("client closed the connection")
-			return
-		default:
-			log.Printf("client error: %v\n", err)
-			return
-		}
-
-		// Waiting for the server response
-		serverResponse, err := serverReader.ReadString('\n')
-
-		switch err {
-		case nil:
-			log.Println(strings.TrimSpace(serverResponse))
-		case io.EOF:
-			log.Println("server closed the connection")
-			return
-		default:
-			log.Printf("server error: %v\n", err)
-			return
-		}
-	}
-
-} // .End Main
 
 func main() {
-	arguments := os.Args // detect parameter
+	arguments := os.Args
+        if len(arguments) == 1 {
+                fmt.Println("Please provide host:port.")
+                return
+        }
 
-	// count argument size of array
-	if len(arguments) == 1 {
-		// display text to screen
-		fmt.Println("Please provide a port number!")
-		// stop program
-		return
-	}
+        CONNECT := arguments[1]
+        c, err := net.Dial("tcp", CONNECT)
+        if err != nil {
+                fmt.Println(err)
+                return
+        }
 
-	PORT := ":" + arguments[1]
-	l, err := net.Listen("tcp4", PORT)
-	if err != nil {
-		// display text to screen
-		fmt.Println(err)
-		return
-	}
 
-	defer l.Close()
+		// call menu 
+		go selectMenu()
 
-	rand.Seed(time.Now().Unix())
 
-	for {
-		c, err := l.Accept()
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		go handleConnection(c)
-	}
+
+        for {
+				// display menu and wait to display on screen
+				go selecrtMenu()
+
+                reader := bufio.NewReader(os.Stdin)
+                fmt.Print(">> ")
+
+                text, _ := reader.ReadString('\n')
+                
+				// show out put from server
+				fmt.Fprintf(c, text+"\n")
+
+                message, _ := bufio.NewReader(c).ReadString('\n')
+                fmt.Print("->: " + message)
+
+
+				
+                if strings.TrimSpace(string(text)) == "STOP" {
+                        fmt.Println("TCP client exiting...")
+                        return
+                }
+        }
 
 } // .end main
+
+func int selectMenu() {
+	fmt.Print("Menu Program \n")
+	fmt.Print("1. Input Item\n")
+	fmt.Print("2. Checkout Item\n")
+	fmt.Print("3. Show Item\n")
+	
+	fmt.Print("-------------\n")
+	fmt.Print("Pls, select menu from above = ")
+	d:= input.Scan()
+	return d
+}
 
 func checkin(itmNo string, qty int16) {
 	//
@@ -146,8 +126,8 @@ func checkout(itmNo string, qty int16) {
 } //. End checkout
 
 func currentStock(jsonString string) {
-
-	} // .end
+	
+} // .end
 
 // do sum process when connected
 func handleConnection(c net.Conn) {
