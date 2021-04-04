@@ -28,9 +28,11 @@ func main() {
                 fmt.Println("Please provide host:port.")
                 return
         }
-
+	
         CONNECT := arguments[1]
+	//connect with server
         c, err := net.Dial("tcp", CONNECT)
+	//error condition
         if err != nil {
                 fmt.Println(err)
                 return
@@ -58,7 +60,7 @@ func main() {
                 fmt.Print("->: " + message)
 
 
-				
+		//Type stop to exit
                 if strings.TrimSpace(string(text)) == "STOP" {
                         fmt.Println("TCP client exiting...")
                         return
@@ -133,7 +135,7 @@ func currentStock(jsonString string) {
 
 // do sum process when connected
 func handleConnection(c net.Conn) {
-	// print display on screen
+	// print display on screen from server
 	fmt.Printf("Serving %s\n", c.RemoteAddr().String())
 	for {
 		netData, err := bufio.NewReader(c).ReadString('\n')
