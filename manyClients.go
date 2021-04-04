@@ -12,7 +12,8 @@ import (
 	// "os"
 	"strings"
 )
- 
+
+//Old file of client
 func main() {
 	con, err := net.Dial("tcp", "0.0.0.0:9999")
 	if err != nil {
