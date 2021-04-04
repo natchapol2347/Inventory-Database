@@ -174,6 +174,7 @@ func (c *Cache) promote(node *cacheItem) {
 	  defer c.mu.Unlock()
 	  c.moveToFront(node)
 	}
+	
   }
 
 func main() {
