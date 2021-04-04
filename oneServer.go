@@ -2,12 +2,20 @@ package main
  
 import (
 	"bufio"
+	"database/sql"
 	"io"
 	"log"
 	"net"
 	"strings"
+	// "funcs"
+	"go_work/implem"
+	_ "github.com/go-sql-driver/mysql"
 )
  
+var (
+	db    *sql.DB
+)
+
 func main() {
 	listener, err := net.Listen("tcp", "0.0.0.0:9999")
 	if err != nil {
@@ -80,7 +88,10 @@ func handleClientRequest(con net.Conn) {
 		}
 		
 		if number == 1{
-			//run going_in
+			db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
+			endin := make(chan int)
+			implem.Going_in(endin,"user", 1, 1)
+			<-endin
 		}else if number == 2{
 			//run going_out
 		}else if number == 3{
