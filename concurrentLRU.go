@@ -17,6 +17,7 @@ type Cache struct {
 	items    map[int]*cacheItem
 	head     *cacheItem
 	tail     *cacheItem
+	mu 		sync.Mutex
 }
 
 type cacheItem struct {
@@ -37,6 +38,7 @@ func newCache(c int) *Cache {
 		items:    make(map[int]*cacheItem),
 		head:     nil,
 		tail: 	  nil,
+		mu: 	sync.Mutex{},
 	}
 }
 
@@ -110,16 +112,21 @@ func (c *Cache) printCache(){
 
 
 func (c *Cache) get(name string, key int, load int) (int,int){
-	if _, ok := c.items[key]; ok{
-		value := c.items[key].quantity
+	c.mu.Lock()
+	if res, ok := c.items[key]; ok{
+		c.mu.Unlock()	
+		value := res.quantity
 		if(value - load < 0){
 			// fmt.Println("not enough in stock")
 			return -1,-1
 		}
-		c.moveToFront(c.items[key])
+		c.moveToFront(res)
+		c.mu.Lock()
 		c.items[key].quantity -= load 
+		c.mu.Unlock()
 		return key, value-load
 	}else{
+		c.mu.Unlock()
 		//if there's no key
 		// fmt.Println("there's no key", key, "yet")
 		return -1,-1
@@ -127,36 +134,46 @@ func (c *Cache) get(name string, key int, load int) (int,int){
 }
 
 func (c *Cache) put(name string, key int, load int) {
+	c.mu.Lock()
 	if _, ok := c.items[key]; ok {
+		c.mu.Unlock()
+
+		c.mu.Lock()
 		c.items[key].quantity += load
 		c.moveToFront(c.items[key])
+		c.mu.Unlock()
 		return
 	}
+	c.mu.Unlock()
 
 	if c.size == c.capacity {
 		delKey := c.head.serial
 		c.pop()
 		c.size--
+		c.mu.Lock()
 		delete(c.items, delKey)
+		c.mu.Unlock()
 	}
 	page := c.insert_tail(name, key, load)
 	c.size++
+	c.mu.Lock()
 	c.items[key] = page
+	c.mu.Unlock()
 }
 
-func (c *Cache) promote(node *cacheItem) {
-	now := time.Now()
-	stale := now.Add(time.Minute * -2)
+// func (c *Cache) promote(node *cacheItem) {
+// 	now := time.Now()
+// 	stale := now.Add(time.Minute * -2)
   
-	node.mu.Lock()
-	defer node.mu.Unlock()
-	if node.last_promoted.Before(stale) {
-	  item.promoted = now
-	  c.listLock.Lock()
-	  defer c.listLock.Unlock()
-	  c.list.MoveToFront(item.element)
-	}
-  }
+// 	node.mu.Lock()
+// 	defer node.mu.Unlock()
+// 	if node.last_promoted.Before(stale) {
+// 	  node.last_promoted = now
+// 	  c.listLock.Lock()
+// 	  defer c.listLock.Unlock()
+// 	  c.list.MoveToFront(item.element)
+// 	}
+//   }
 func main() {
 	cache := newCache(3)
 	// cache.put(2, 2)
