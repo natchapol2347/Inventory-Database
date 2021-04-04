@@ -29,6 +29,7 @@ func main() {
 	//Send automatically 100 times
 	for i := 0; i < 100; i++ {
 		// Waiting for the client request
+		//random number from 1-5, because input have only 1-5
 		clientRequest := strconv.Itoa(rand.Intn(4) + 1)
 		//Write to server, about what client want
 		if _, err = con.Write([]byte(clientRequest + "\n")); err != nil {
