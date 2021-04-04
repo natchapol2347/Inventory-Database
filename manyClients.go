@@ -12,7 +12,9 @@ import (
 	// "os"
 	"strings"
 )
- 
+
+
+//Old file of client
 func main() {
 	con, err := net.Dial("tcp", "0.0.0.0:9999")
 	if err != nil {
@@ -24,12 +26,13 @@ func main() {
 
 	for i:=0; i<100; i++{
 		// Waiting for the client request
-		clientRequest:= strconv.Itoa(rand.Intn(4)+1)
+		clientRequest:= strconv.Itoa(rand.Intn(4)+1) //Randomize 5 numbers
 			if _, err = con.Write([]byte(clientRequest + "\n")); err != nil {
 				log.Printf("failed to send the client request: %v\n", err)
 			}
 		
- 
+
+		
 		// Waiting for the server response
 		serverResponse, err := serverReader.ReadString('\n')
  
