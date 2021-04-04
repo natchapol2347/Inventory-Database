@@ -67,6 +67,7 @@ func main() {
 } // .end main
 
 func int selectMenu() {
+	//Create menu for input
 	fmt.Print("Menu Program \n")
 	fmt.Print("1. Input Item\n")
 	fmt.Print("2. Checkout Item\n")
@@ -79,7 +80,7 @@ func int selectMenu() {
 }
 
 func checkin(itmNo string, qty int16) {
-	//
+	//manual enter
 	reader := bufio.NewReader(os.Stdin)
 
 	fmt.Print("Enter Item Code: ")
