@@ -120,7 +120,7 @@ func (c *Cache) get(name string, key int, load int) (int,int){
 			// fmt.Println("not enough in stock")
 			return -1,-1
 		}
-		c.moveToFront(res)
+		c.promote(res)
 		c.mu.Lock()
 		c.items[key].quantity -= load 
 		c.mu.Unlock()
@@ -140,7 +140,7 @@ func (c *Cache) put(name string, key int, load int) {
 
 		c.mu.Lock()
 		c.items[key].quantity += load
-		c.moveToFront(c.items[key])
+		c.promote(c.items[key])
 		c.mu.Unlock()
 		return
 	}
@@ -161,19 +161,20 @@ func (c *Cache) put(name string, key int, load int) {
 	c.mu.Unlock()
 }
 
-// func (c *Cache) promote(node *cacheItem) {
-// 	now := time.Now()
-// 	stale := now.Add(time.Minute * -2)
+func (c *Cache) promote(node *cacheItem) {
+	now := time.Now()
+	stale := now.Add(time.Minute * -1) // if more than one minute has pass allow for promotion
   
-// 	node.mu.Lock()
-// 	defer node.mu.Unlock()
-// 	if node.last_promoted.Before(stale) {
-// 	  node.last_promoted = now
-// 	  c.listLock.Lock()
-// 	  defer c.listLock.Unlock()
-// 	  c.list.MoveToFront(item.element)
-// 	}
-//   }
+	node.mu.Lock()
+	defer node.mu.Unlock()
+	if node.last_promoted.Before(stale) {
+	  node.last_promoted = now
+	  c.mu.Lock()
+	  defer c.mu.Unlock()
+	  c.moveToFront(node)
+	}
+  }
+
 func main() {
 	cache := newCache(3)
 	// cache.put(2, 2)
