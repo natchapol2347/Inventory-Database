@@ -22,6 +22,7 @@ type ProductItem struct {
 
 
 func main() {
+	//connect to server with host and port
 	arguments := os.Args
         if len(arguments) == 1 {
                 fmt.Println("Please provide host:port.")
@@ -83,7 +84,6 @@ func checkin(itmNo string, qty int16) {
 	//manual enter
 	reader := bufio.NewReader(os.Stdin)
 
-	//search for items in inventory
 	fmt.Print("Enter Item Code: ")
     itemCode, _ := reader.ReadString('\n')
 	
@@ -158,4 +158,6 @@ func handleConnection(c net.Conn) {
 		c.Write([]byte(string(result)))
 	}
 	c.Close()
+	
+	
 } // .End handleConnection
