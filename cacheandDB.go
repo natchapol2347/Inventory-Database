@@ -2,7 +2,7 @@ package main
 
 import (
 
-	"errors"
+	// "errors"
 	"fmt"
 	// "mime/multipart"
 	"sync"
@@ -56,7 +56,7 @@ func newItemNode(in_name string, key int, value int) *cacheItem{
 }
 func (c *Cache) insert_tail(name string,key int, value int) *cacheItem{
 	//make new item from argument
-	newItem := newItemNode(name,key, value)
+	newItem := newItemNode(name, key, value)
 	if(c.tail == nil && c.head == nil){
 		c.tail = newItem
 		c.head = newItem
@@ -119,8 +119,7 @@ func (c *Cache) get(end chan int, name string, key int, load int) (string, int,i
 			return "",-1,-1
 		}
 		c.moveToFront(c.items[key])
-		c.items[key].quantity -= load
-		end := make(chan int) 
+		c.items[key].quantity -= load 
 		go going_out(end, name, key, load)
 		return name, key, value-load
 	}else{
@@ -130,12 +129,11 @@ func (c *Cache) get(end chan int, name string, key int, load int) (string, int,i
 	}
 }
 
-func (c *Cache) put(name string,key int, load int) {
+func (c *Cache) put(end chan int, name string,key int, load int) {
 	//if there's already key in cache just add 
 	if _, ok := c.items[key]; ok {
 		c.items[key].quantity += load
 		c.moveToFront(c.items[key])
-		end := make(chan int) 
 		go going_in(end, name, key, load)
 		return
 	}
@@ -149,6 +147,7 @@ func (c *Cache) put(name string,key int, load int) {
 	page := c.insert_tail(name, key, load)
 	c.size++
 	c.items[key] = page
+	go going_in(end, name, key, load)
 	
 }
 
@@ -342,6 +341,14 @@ func show_record_out(endrec chan int, name string) {
 	endrec<-num
 }
 
-func main{
+func main(){
+	db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
+	defer db.Close()
+
+	c:= make(chan int)
+
+	cache:= newCache(5)
+
+	cache.put(c,"fruit", 1, 30)
 
 }
