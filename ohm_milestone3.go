@@ -1,4 +1,4 @@
-package main
+package implem
 
 import (
 	"database/sql"
@@ -16,7 +16,7 @@ var (
 	mutex sync.Mutex
 )
 
-func get_items(q chan int, e chan int, n chan string, id int) {
+func Get_items(q chan int, e chan int, n chan string, id int) {
 
 	row, err := db.Query("SELECT name, quantity, expdate FROM items WHERE id = " + strconv.Itoa(id))
 	if err != nil {
@@ -36,7 +36,7 @@ func get_items(q chan int, e chan int, n chan string, id int) {
 		fmt.Println("name: ", name, " quantity: ", quantity, " expdate: ", expdate)
 	}
 }
-func minus(q chan int, c chan int, quantity int, id int) {
+func Minus(q chan int, c chan int, quantity int, id int) {
 	quantityy := <-q // channel from get_items
 	newQuantity := quantityy - quantity
 	if newQuantity < 0 {
@@ -48,29 +48,29 @@ func minus(q chan int, c chan int, quantity int, id int) {
 	c <- 0
 }
 
-func insertingex(n chan string, e chan int, quantity int, id int, name string) {
+func Insertingex(n chan string, e chan int, quantity int, id int, name string) {
 	product := <-n
 	expdate := <-e
 	db.Exec("INSERT INTO export(name, quantity, expdate,id,user) VALUES (?, ?, ?, ?, ?)", product, quantity, expdate, id, name)
 }
 
-func going_out(end chan int, name string, id int, quantity int) {
+func Going_out(end chan int, name string, id int, quantity int) {
 	// fmt.Printf("start\n")
 	start := time.Now()
 	c := make(chan int)
 	q := make(chan int)
 	e := make(chan int)
 	n := make(chan string)
-	if rowExists("SELECT * FROM items WHERE id = ?", id) {
+	if RowExists("SELECT * FROM items WHERE id = ?", id) {
 		mutex.Lock()
-		go get_items(q, e, n, id)
-		go minus(q, c, quantity, id)
+		go Get_items(q, e, n, id)
+		go Minus(q, c, quantity, id)
 		<-c // wait for all go routines
 		mutex.Unlock()
 	} else {
 		return
 	}
-	go insertingex(n, e, quantity, id, name)
+	go Insertingex(n, e, quantity, id, name)
 	fmt.Printf("time: %v\n", time.Since(start))
 
 	num, _ := strconv.Atoi(name)
@@ -78,7 +78,7 @@ func going_out(end chan int, name string, id int, quantity int) {
 	return
 }
 
-func plus(q chan int, c chan int, quantity int, id int) {
+func Plus(q chan int, c chan int, quantity int, id int) {
 	quantityy := <-q // channel from get_items
 	newQuantity := quantityy + quantity
 	if newQuantity < 0 {
@@ -89,29 +89,29 @@ func plus(q chan int, c chan int, quantity int, id int) {
 	db.Exec("update items set quantity = ? where id = ? ", newQuantity, id)
 	c <- 0
 }
-func insertingim(n chan string, e chan int, quantity int, id int, name string) {
+func Insertingim(n chan string, e chan int, quantity int, id int, name string) {
 	product := <-n
 	expdate := <-e
 	db.Exec("INSERT INTO import(name, quantity, expdate,id,user) VALUES (?, ?, ?, ?, ?)", product, quantity, expdate, id, name)
 }
 
-func going_in(end chan int, name string, id int, quantity int) {
+func Going_in(end chan int, name string, id int, quantity int) {
 	start := time.Now()
 	c := make(chan int)
 	q := make(chan int)
 	e := make(chan int)
 	n := make(chan string)
-	if rowExists("SELECT * FROM items WHERE id = ?", id) {
+	if RowExists("SELECT * FROM items WHERE id = ?", id) {
 		mutex.Lock()
-		go get_items(q, e, n, id)
-		go plus(q, c, quantity, id)
+		go Get_items(q, e, n, id)
+		go Plus(q, c, quantity, id)
 		<-c // wait for all go routines
 		mutex.Unlock()
 	} else {
-		insertingitem("New  with id "+strconv.Itoa(id), quantity, 0, id)
+		Insertingitem("New  with id "+strconv.Itoa(id), quantity, 0, id)
 	}
 
-	go insertingim(n, e, quantity, id, name)
+	go Insertingim(n, e, quantity, id, name)
 	fmt.Printf("time: %v\n", time.Since(start))
 
 	num, _ := strconv.Atoi(name)
@@ -119,7 +119,7 @@ func going_in(end chan int, name string, id int, quantity int) {
 	return
 }
 
-func rowExists(query string, args ...interface{}) bool {
+func RowExists(query string, args ...interface{}) bool {
 	var exists bool
 	query = fmt.Sprintf("SELECT exists (%s)", query)
 	err := db.QueryRow(query, args...).Scan(&exists)
@@ -129,11 +129,11 @@ func rowExists(query string, args ...interface{}) bool {
 	return exists
 }
 
-func insertingitem(name string, quantity int, expdate int, id int) {
+func Insertingitem(name string, quantity int, expdate int, id int) {
 	db.Exec("INSERT INTO items(name,quantity,expdate,id) VALUES (?,?,?,?)", name, quantity, expdate, id)
 }
 
-func show_current(endrec chan int, name string) {
+func Show_current(endrec chan int, name string) {
 	rows, err := db.Query("SELECT * FROM items")
 	if err != nil {
 		panic(err)
@@ -148,13 +148,13 @@ func show_current(endrec chan int, name string) {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("name: ", name, "\t quantity: ", quantity, "\t expdate: ", expdate, "\t id: ", id,"\n")
+		fmt.Println("name: ", name, "\t quantity: ", quantity, "\t expdate: ", expdate, "\t id: ", id, "\n")
 	}
 	num, _ := strconv.Atoi(name)
-	endrec<-num
+	endrec <- num
 }
 
-func show_record_in(endrec chan int, name string) {
+func Show_record_in(endrec chan int, name string) {
 	rows, err := db.Query("SELECT * FROM import")
 	if err != nil {
 		panic(err)
@@ -170,13 +170,13 @@ func show_record_in(endrec chan int, name string) {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("name: ", name, "\t quantity: ", quantity, "\t expdate: ", expdate, "\t id: ", id,"\t user: ", user,"\n")
+		fmt.Println("name: ", name, "\t quantity: ", quantity, "\t expdate: ", expdate, "\t id: ", id, "\t user: ", user, "\n")
 	}
 	num, _ := strconv.Atoi(name)
-	endrec<-num
+	endrec <- num
 }
 
-func show_record_out(endrec chan int, name string) {
+func Show_record_out(endrec chan int, name string) {
 	rows, err := db.Query("SELECT * FROM export")
 	if err != nil {
 		panic(err)
@@ -192,41 +192,41 @@ func show_record_out(endrec chan int, name string) {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("name: ", name, "\t quantity: ", quantity, "\t expdate: ", expdate, "\t id: ", id,"\t user: ", user,"\n")
+		fmt.Println("name: ", name, "\t quantity: ", quantity, "\t expdate: ", expdate, "\t id: ", id, "\t user: ", user, "\n")
 	}
 	num, _ := strconv.Atoi(name)
-	endrec<-num
+	endrec <- num
 }
 
-func main() {
-	db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
-	//defer db.Close()
-	// insertingitem("TV",1000,0,3)
-	n := 10
-	endin := make(chan int, n)
-	// endout := make(chan int, n)
-	endrecin := make(chan int, n)
-	endrecout:= make(chan int, n)
-	endcurrent := make(chan int, n)
-	start2 := time.Now()
+// func main() {
+// db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
+// //defer db.Close()
+// // insertingitem("TV",1000,0,3)
+// n := 10
+// endin := make(chan int, n)
+// // endout := make(chan int, n)
+// endrecin := make(chan int, n)
+// endrecout:= make(chan int, n)
+// endcurrent := make(chan int, n)
+// start2 := time.Now()
 
-	for i := 0; i < n; i++ {
-		go going_in(endin, strconv.Itoa(i), 1, 10)
-		go going_in(endin, strconv.Itoa(i), 2, 10)
-		go show_record_in(endrecin,strconv.Itoa(i))
-		go show_record_out(endrecout,strconv.Itoa(i))
-		go show_current(endcurrent,strconv.Itoa(i))
-	}
-	
-	for i := 0; i < n; i++ {
-		<-endin
-		// <-endout
-		<-endrecin
-		<-endrecout
-		<-endcurrent
-	}
-	
-	fmt.Printf("Total time: %v\n", time.Since(start2))
-	
-	return
-}
+// for i := 0; i < n; i++ {
+// 	go Going_in(endin, strconv.Itoa(i), 1, 10)
+// 	go Going_in(endin, strconv.Itoa(i), 2, 10)
+// 	go Show_record_in(endrecin,strconv.Itoa(i))
+// 	go Show_record_out(endrecout,strconv.Itoa(i))
+// 	go Show_current(endcurrent,strconv.Itoa(i))
+// }
+
+// for i := 0; i < n; i++ {
+// 	<-endin
+// 	// <-endout
+// 	<-endrecin
+// 	<-endrecout
+// 	<-endcurrent
+// }
+
+// fmt.Printf("Total time: %v\n", time.Since(start2))
+
+// 	return
+// }
