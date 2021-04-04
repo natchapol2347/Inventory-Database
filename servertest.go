@@ -7,7 +7,7 @@ import (
 	"log"
 	"net"
 	"strings"
-	// "funcs"
+	"funcs"
 	_ "github.com/go-sql-driver/mysql"
 )
  
@@ -89,7 +89,7 @@ func handleClientRequest(con net.Conn) {
 		if number == 1{
 			db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
 			endin := make(chan int)
-			going_in(endin,"user", 1, 1)
+			funcs.Going_in(endin,"user", 1, 1)
 			<-endin
 		}else if number == 2{
 			//run going_out
