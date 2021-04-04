@@ -83,6 +83,7 @@ func checkin(itmNo string, qty int16) {
 	//manual enter
 	reader := bufio.NewReader(os.Stdin)
 
+	//search for items in inventory
 	fmt.Print("Enter Item Code: ")
     itemCode, _ := reader.ReadString('\n')
 	
