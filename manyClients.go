@@ -2,51 +2,40 @@ package main
 
 import (
 	"bufio"
-	"fmt"
+	// "fmt"
+	"math/rand"
+	"strconv"
 	"io"
 	"log"
 	"net"
-	"time"
+	// "time"
 	// "os"
 	"strings"
 )
  
 func main() {
-	con, err := net.Dial("tcp", "0.0.0.0:8000")
+	con, err := net.Dial("tcp", "0.0.0.0:9999")
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer con.Close()
- 
+
 	serverReader := bufio.NewReader(con)
-	count:=0
-	start := time.Now()
-	for i:=0;i<20000;i++{
+
+	for i:=0; i<100; i++{
 		// Waiting for the client request
-		clientRequest := "banana"
- 
-		switch err {
-		case nil:
+		clientRequest:= strconv.Itoa(rand.Intn(4)+1)
 			if _, err = con.Write([]byte(clientRequest + "\n")); err != nil {
 				log.Printf("failed to send the client request: %v\n", err)
 			}
-		case io.EOF:
-			log.Println("client closed the connection")
-			return
-		default:
-			log.Printf("client error: %v\n", err)
-			return
-		}
+		
  
 		// Waiting for the server response
-		
 		serverResponse, err := serverReader.ReadString('\n')
  
 		switch err {
 		case nil:
 			log.Println(strings.TrimSpace(serverResponse))
-			count = count+1
-			fmt.Println(count)
 		case io.EOF:
 			log.Println("server closed the connection")
 			return
@@ -55,5 +44,4 @@ func main() {
 			return
 		}
 	}
-	fmt.Printf("Total time: %v\n", time.Since(start))
 }
