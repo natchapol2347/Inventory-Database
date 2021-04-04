@@ -125,9 +125,10 @@ func (c *Cache) get(end chan int, name string, key int, load int) (string, int,i
 		//if there's no key
 		// fmt.Println("there's no key", key, "yet")
 		x := make(chan bool) 
+		defer close(x)
 		go going_out(x, end, name, key, load)
 		var ifIn bool = <-x 
-		if(ifIn){
+		if(!ifIn){
 			return "",-1,-1
 		}
 		c.put(end, name, key, load)
@@ -140,7 +141,7 @@ func (c *Cache) put(end chan int, name string,key int, load int) {
 	if _, ok := c.items[key]; ok {
 		c.items[key].quantity += load
 		c.moveToFront(c.items[key])
-		go going_in(nil,end, name, key, load)
+		go going_in(end, name, key, load)
 		return
 	}
 	//if cache is full delete last recent node
@@ -154,7 +155,7 @@ func (c *Cache) put(end chan int, name string,key int, load int) {
 	page := c.insert_tail(name, key, load)
 	c.size++
 	c.items[key] = page
-	go going_in(nil,end, name, key, load)
+	go going_in(end, name, key, load)
 
 }
 
@@ -217,7 +218,6 @@ func going_out(cacheEnd chan bool, end chan int, name string, id int, quantity i
 		<-c // wait for all go routines
 		mutex.Unlock()
 	} else {
-		fmt.Println("it's not in db")
 		cacheEnd <- false
 		return
 	}
@@ -237,7 +237,7 @@ func increment(q chan int, c chan int, quantity int, id int) {
 		c <- 0
 		return
 	}
-	fmt.Println("the items left in stock: ", newQuantity)
+	// fmt.Println("the items left in stock: ", newQuantity)
 	db.Exec("update items set quantity = ? where id = ? ", newQuantity, id)
 	c <- 0
 }
@@ -247,7 +247,7 @@ func insertingim(n chan string, e chan int, quantity int, id int, name string) {
 	db.Exec("INSERT INTO import(name, quantity, expdate,id,user) VALUES (?, ?, ?, ?, ?)", product, quantity, expdate, id, name)
 }
 
-func going_in(cacheEnd chan bool,end chan int, name string, id int, quantity int) {
+func going_in(end chan int, name string, id int, quantity int) {
 	c := make(chan int)
 	q := make(chan int)
 	e := make(chan int)
@@ -260,7 +260,7 @@ func going_in(cacheEnd chan bool,end chan int, name string, id int, quantity int
 		mutex.Unlock()
 	} else {
 		insertingitem("New  with id "+strconv.Itoa(id), quantity, 0, id)
-		cacheEnd <- false
+		
 		
 	}
 	go insertingim(n, e, quantity, id, name)
@@ -268,7 +268,8 @@ func going_in(cacheEnd chan bool,end chan int, name string, id int, quantity int
 
 	num, _ := strconv.Atoi(name)
 	end <- num
-	cacheEnd <- true
+	
+	
 	return 
 }
 
@@ -364,6 +365,8 @@ func main(){
 	cache.get(c,"wig",55, 40)
 	cache.get(c,"fruit",1,10)
 	cache.get(c,"album",23,90)
+	cache.put(c,"wig",55,50)
+	cache.put(c,"album",23,190)
 	<- c
 	cache.printCache()
 }

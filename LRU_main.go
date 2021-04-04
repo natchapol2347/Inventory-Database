@@ -25,6 +25,7 @@ type cacheItem struct {
 	next     *cacheItem
 	prev	 *cacheItem
 	mu       sync.Mutex
+	
 
 }
 
@@ -117,7 +118,7 @@ func (c *Cache) get(name string, key int, load int) (int,int){
 		c.items[key].quantity -= load 
 		return key, value-load
 	}else{
-		//if there's no key
+		//if there's no key in database
 		// fmt.Println("there's no key", key, "yet")
 		return -1,-1
 	}

@@ -140,8 +140,9 @@ func (c *Cache) put(name string, key int, load int) {
 
 		c.mu.Lock()
 		c.items[key].quantity += load
-		c.promote(c.items[key])
 		c.mu.Unlock()
+		c.promote(c.items[key])
+		
 		return
 	}
 	c.mu.Unlock()
