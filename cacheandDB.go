@@ -136,17 +136,20 @@ func (c *Cache) put(end chan int, name string,key int, load int) {
 		go going_in(end, name, key, load)
 		return
 	}
-
+	//if cache is full delete last recent node
 	if c.size == c.capacity {
+		fmt.Println("he")
 		delKey := c.head.serial
 		c.pop()
 		c.size--
 		delete(c.items, delKey)
 	}
+	//insert new node
 	page := c.insert_tail(name, key, load)
 	c.size++
 	c.items[key] = page
 	go going_in(end, name, key, load)
+	fmt.Println("hi")
 
 }
 
@@ -243,6 +246,7 @@ func going_in(end chan int, name string, id int, quantity int) {
 	e := make(chan int)
 	n := make(chan string)
 	if rowExists("SELECT * FROM items WHERE id = ?", id) {
+		fmt.Println("yelo")
 		mutex.Lock()
 		go get_items(q, e, n, id)
 		go increment(q, c, quantity, id)
@@ -250,6 +254,9 @@ func going_in(end chan int, name string, id int, quantity int) {
 		mutex.Unlock()
 	} else {
 		insertingitem("New  with id "+strconv.Itoa(id), quantity, 0, id)
+		fmt.Println("fuck")
+
+
 	}
 
 	go insertingim(n, e, quantity, id, name)
@@ -257,6 +264,7 @@ func going_in(end chan int, name string, id int, quantity int) {
 
 	num, _ := strconv.Atoi(name)
 	end <- num
+	fmt.Println("yolo")
 	return
 }
 
@@ -271,7 +279,9 @@ func rowExists(query string, args ...interface{}) bool {
 }
 
 func insertingitem(name string, quantity int, expdate int, id int) {
+	
 	db.Exec("INSERT INTO items(name,quantity,expdate,id) VALUES (?,?,?,?)", name, quantity, expdate, id)
+	fmt.Println("im in")
 }
 
 func show_current(endrec chan int, name string) {
@@ -341,14 +351,14 @@ func show_record_out(endrec chan int, name string) {
 
 func main(){
 	db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
-	defer db.Close()
+	// defer db.Close()
+	insertingitem("fruit",100,29,3)
+	// c:= make(chan int)
 
-	c:= make(chan int)
+	// cache:= newCache(5)
 
-	cache:= newCache(5)
-
-	cache.put(c,"fruit", 1, 30)
+	// cache.put(c,"fruit", 1, 30)
 	
-	<- c
-	cache.printCache()
+	// <- c
+	// cache.printCache()
 }
