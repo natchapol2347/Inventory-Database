@@ -19,8 +19,6 @@ type ProductItem struct {
 	qty  int
 }
 
-
-
 func main() {
 	arguments := os.Args
         if len(arguments) == 1 {
@@ -35,15 +33,9 @@ func main() {
                 return
         }
 
-
-		
-
-
-
         for {
 				// display menu and wait to display on screen
 				go selecrtMenu()
-
 
 				start2 := time.Now()
 
@@ -104,16 +96,28 @@ func checkin(itmNo string, qty int16) {
 
 } //. End checkin
 
-func connectToChekcinn chan string, e chan int, quantity int, id int, name string) {
+func connectToChekcinn chan string, e chan int, quantity int, id int, name string, con net.Conn) {
+	defer con.Close()
+ 
+	clientReader := bufio.NewReader(con)
+
 	product := <-n
 	expdate := <-e
+
+	// Responding to the client request
+	_, err = con.Write([]byte("1\n"))
 	
 }
 
-func connectToChekcout(n chan string, e chan int, quantity int, id int, name string) {
+func connectToChekcout(n chan string, e chan int, quantity int, id int, name string, con net.Conn) {
+	defer con.Close()
+ 
+	clientReader := bufio.NewReader(con)
 	product := <-n
 	expdate := <-e
 	
+	// Responding to the client request
+	_, err = con.Write([]byte("2\n"))
 }
 	
 
@@ -134,7 +138,7 @@ func checkout(itmNo string, qty int16) {
 	go connectToCheckout()
 
 	// print display on screen
-	fmt.Printf("Item got %s\n", itemCode)
+	// fmt.Printf("Item got %s\n", itemCode)
 
 } //. End checkout
 
@@ -158,12 +162,6 @@ func handleConnection(c net.Conn) {
 		if temp == "STOP" {
 			break
 		}
-
-
-		while () {
-
-		}
-
 
 		result := "test\n"
 		c.Write([]byte(string(result)))
