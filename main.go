@@ -87,6 +87,8 @@ func int selectMenu() {
 }
 
 func checkin(itmNo string, qty int16) {
+	start2 := time.Now() //start what time
+	fmt.Print(start2) //display time
 	//
 	reader := bufio.NewReader(os.Stdin)
 
@@ -101,7 +103,8 @@ func checkin(itmNo string, qty int16) {
 
 	// print display on screen
 	fmt.Printf("Item added %s\n", itemCode)
-
+	start2 := time.Now() //start what time
+	fmt.Print(start2) //display time
 } //. End checkin
 //make sure data is send to server
 func connectToChekcinn chan string, e chan int, quantity int, id int, name string, con net.Conn) {
