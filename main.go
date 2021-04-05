@@ -19,6 +19,7 @@ type ProductItem struct {
 	qty  int
 }
 
+//Landing, start here end here, need port from server, which is ("tcp", "0.0.0.0:9999")
 func main() {
 	arguments := os.Args
         if len(arguments) == 1 {
@@ -26,7 +27,9 @@ func main() {
                 return
         }
 
+		//Connect to server
         CONNECT := arguments[1]
+		//object, error
         c, err := net.Dial("tcp", CONNECT)
         if err != nil {
                 fmt.Println(err)
