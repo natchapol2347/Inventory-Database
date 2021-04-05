@@ -129,6 +129,7 @@ func (c *Cache) get(end chan int, name string, key int, load int) (string, int,i
 		go going_out(x, end, name, key, load)
 		var ifIn bool = <-x 
 		if(!ifIn){
+			fmt.Println("not here!")
 			return "",-1,-1
 		}
 		c.put(end, name, key, load)
@@ -156,6 +157,7 @@ func (c *Cache) put(end chan int, name string,key int, load int) {
 	c.size++
 	c.items[key] = page
 	go going_in(end, name, key, load)
+	return
 
 }
 
@@ -226,7 +228,7 @@ func going_out(cacheEnd chan bool, end chan int, name string, id int, quantity i
 
 	num, _ := strconv.Atoi(name)
 	end <- num
-	cacheEnd <-false
+	cacheEnd <-true
 	return
 }
 
@@ -259,6 +261,7 @@ func going_in(end chan int, name string, id int, quantity int) {
 		<-c // wait for all go routines
 		mutex.Unlock()
 	} else {
+		fmt.Println("adding new item")
 		insertingitem("New  with id "+strconv.Itoa(id), quantity, 0, id)
 		
 		
@@ -366,7 +369,7 @@ func main(){
 	cache.get(c,"fruit",1,10)
 	cache.get(c,"album",23,90)
 	cache.put(c,"wig",55,50)
-	cache.put(c,"album",23,190)
+	cache.put(c,"album",23,100)
 	<- c
 	cache.printCache()
 }
