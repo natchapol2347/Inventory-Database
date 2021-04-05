@@ -35,16 +35,20 @@ func main() {
 
         for {
 				// display menu and wait to display on screen
-				go selecrtMenu()
+				//go selecrtMenu()
 
 				start2 := time.Now()
-
+				n = 5
 				for i := 0; i < n; i++ {
 					go checkin(endin, strconv.Itoa(i), 1, 10)
 				}
 
 				for i := 0; i < n; i++ {
 					go checkout(endin, strconv.Itoa(i), 1, 10)
+				}
+
+				for i := 0; i < n; i++ {
+					go connectToCurrentStock("test product")
 				}
 
                 reader := bufio.NewReader(os.Stdin)
@@ -58,7 +62,7 @@ func main() {
                 message, _ := bufio.NewReader(c).ReadString('\n')
                 fmt.Print("->: " + message)
 				
-                if strings.TrimSpace(string(text)) == "STOP" {
+                if strings.TrimSpace(string(text)) == "QUIT" {
                         fmt.Println("TCP client exiting...")
                         return
                 }
@@ -118,6 +122,17 @@ func connectToChekcout(n chan string, e chan int, quantity int, id int, name str
 	
 	// Responding to the client request
 	_, err = con.Write([]byte("2\n"))
+}
+
+func connectToCurrentStock(name string, con net.Conn) {
+	defer con.Close()
+ 
+	clientReader := bufio.NewReader(con)
+	product := <-n
+	expdate := <-e
+	
+	// Responding to the client request
+	_, err = con.Write([]byte("3," + name + "\n"))
 }
 	
 
