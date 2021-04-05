@@ -93,11 +93,11 @@ func checkin(itmNo string, qty int16) {
 	reader := bufio.NewReader(os.Stdin)
 
 	//fmt.Print("Enter Item Code: ")
-    itemCode, _ := reader.ReadString('\n')
+    itemCode = 123 //, _ := reader.ReadString('\n')
 	
     
 	//fmt.Print("Enter Qty: ")
-    qty, _ := reader.ReadString('\n')
+    qty = 2//, _ := reader.ReadString('\n')
 
 	go connectToCheckin() //prep to connect server for function checkin
 
@@ -106,6 +106,7 @@ func checkin(itmNo string, qty int16) {
 	start2 := time.Now() //start what time
 	fmt.Print(start2) //display time
 } //. End checkin
+
 //make sure data is send to server
 func connectToChekcinn chan string, e chan int, quantity int, id int, name string, con net.Conn) {
 	//defer con.Close()
@@ -148,13 +149,13 @@ func checkout(itmNo string, qty int16) {
 	reader := bufio.NewReader(os.Stdin)
 
 	//fmt.Print("Enter Item Code: ")
-    itemCode, _ := reader.ReadString('\n')
+    itemCode = 10 //, _ := reader.ReadString('\n')
 	
 	//fmt.Print("Enter Item Name: ")
-    itemName, _ := reader.ReadString('\n')
+    itemName = "sss" //, _ := reader.ReadString('\n')
     
 	//fmt.Print("Enter Qty: ")
-    qty, _ := reader.ReadString('\n')
+    qty = 0 //, _ := reader.ReadString('\n')
 
 
 	go connectToCheckout()//stimulate function in server to send back data
