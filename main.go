@@ -33,15 +33,17 @@ func main() {
                 return
         }
 
-        for {
+        for {   //simulate random 1-5 number
 				// display menu and wait to display on screen
 				//go selecrtMenu()
 
-				start2 := time.Now()
-				n = 5
+				start2 := time.Now() //start what time
+				fmt.Print(start2) //display time
+				n = 100 //variable
 				for i := 0; i < n; i++ {
 					go checkin(endin, strconv.Itoa(i), 1, 10)
-				}
+				} //loop end for each loop for each individual number
+				  //to check how good is server
 
 				for i := 0; i < n; i++ {
 					go checkout(endin, strconv.Itoa(i), 1, 10)
@@ -50,6 +52,8 @@ func main() {
 				for i := 0; i < n; i++ {
 					go connectToCurrentStock("test product")
 				}
+				start2 := time.Now() //stop what time
+				fmt.Print(start2) // display time
 
                 reader := bufio.NewReader(os.Stdin)
                 //fmt.Print(">> ")
@@ -93,15 +97,15 @@ func checkin(itmNo string, qty int16) {
 	//fmt.Print("Enter Qty: ")
     qty, _ := reader.ReadString('\n')
 
-	go connectToCheckin()
+	go connectToCheckin() //prep to connect server for function checkin
 
 	// print display on screen
 	fmt.Printf("Item added %s\n", itemCode)
 
 } //. End checkin
-
+//make sure data is send to server
 func connectToChekcinn chan string, e chan int, quantity int, id int, name string, con net.Conn) {
-	defer con.Close()
+	//defer con.Close()
  
 	clientReader := bufio.NewReader(con)
 
@@ -109,12 +113,12 @@ func connectToChekcinn chan string, e chan int, quantity int, id int, name strin
 	expdate := <-e
 
 	// Responding to the client request
-	_, err = con.Write([]byte("1\n"))
+	_, err = con.Write([]byte("1\n")) //send data back to server
 	
 }
 
 func connectToChekcout(n chan string, e chan int, quantity int, id int, name string, con net.Conn) {
-	defer con.Close()
+	//defer con.Close()
  
 	clientReader := bufio.NewReader(con)
 	product := <-n
@@ -125,19 +129,19 @@ func connectToChekcout(n chan string, e chan int, quantity int, id int, name str
 }
 
 func connectToCurrentStock(name string, con net.Conn) {
-	defer con.Close()
+	//defer con.Close()
  
 	clientReader := bufio.NewReader(con)
 	product := <-n
 	expdate := <-e
 	
 	// Responding to the client request
-	_, err = con.Write([]byte("3," + name + "\n"))
+	_, err = con.Write([]byte("3," + name + "\n")) //server send as a packet then client send back
 }
 	
 
 func checkout(itmNo string, qty int16) {
-	//
+	//receive parameter and check in server
 	reader := bufio.NewReader(os.Stdin)
 
 	//fmt.Print("Enter Item Code: ")
@@ -150,7 +154,7 @@ func checkout(itmNo string, qty int16) {
     qty, _ := reader.ReadString('\n')
 
 
-	go connectToCheckout()
+	go connectToCheckout()//stimulate function in server to send back data
 
 	// print display on screen
 	// fmt.Printf("Item got %s\n", itemCode)
