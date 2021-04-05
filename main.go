@@ -22,25 +22,21 @@ type ProductItem struct {
 
 
 func main() {
-	//connect to server with host and port
 	arguments := os.Args
         if len(arguments) == 1 {
                 fmt.Println("Please provide host:port.")
                 return
         }
-	
+
         CONNECT := arguments[1]
-	//connect with server
         c, err := net.Dial("tcp", CONNECT)
-	//error condition
         if err != nil {
                 fmt.Println(err)
                 return
         }
 
 
-		// call menu 
-		go selectMenu()
+		
 
 
 
@@ -48,8 +44,19 @@ func main() {
 				// display menu and wait to display on screen
 				go selecrtMenu()
 
+
+				start2 := time.Now()
+
+				for i := 0; i < n; i++ {
+					go checkin(endin, strconv.Itoa(i), 1, 10)
+				}
+
+				for i := 0; i < n; i++ {
+					go checkout(endin, strconv.Itoa(i), 1, 10)
+				}
+
                 reader := bufio.NewReader(os.Stdin)
-                fmt.Print(">> ")
+                //fmt.Print(">> ")
 
                 text, _ := reader.ReadString('\n')
                 
@@ -58,9 +65,7 @@ func main() {
 
                 message, _ := bufio.NewReader(c).ReadString('\n')
                 fmt.Print("->: " + message)
-
-
-		//Type stop to exit
+				
                 if strings.TrimSpace(string(text)) == "STOP" {
                         fmt.Println("TCP client exiting...")
                         return
@@ -70,7 +75,6 @@ func main() {
 } // .end main
 
 func int selectMenu() {
-	//Create menu for input
 	fmt.Print("Menu Program \n")
 	fmt.Print("1. Input Item\n")
 	fmt.Print("2. Checkout Item\n")
@@ -83,14 +87,14 @@ func int selectMenu() {
 }
 
 func checkin(itmNo string, qty int16) {
-	//manual enter
+	//
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Print("Enter Item Code: ")
+	//fmt.Print("Enter Item Code: ")
     itemCode, _ := reader.ReadString('\n')
 	
     
-	fmt.Print("Enter Qty: ")
+	//fmt.Print("Enter Qty: ")
     qty, _ := reader.ReadString('\n')
 
 	go connectToCheckin()
@@ -100,25 +104,30 @@ func checkin(itmNo string, qty int16) {
 
 } //. End checkin
 
-func connectToChekcin(){
-
-}
-
-func connectToChekcout(){
+func connectToChekcinn chan string, e chan int, quantity int, id int, name string) {
+	product := <-n
+	expdate := <-e
 	
 }
+
+func connectToChekcout(n chan string, e chan int, quantity int, id int, name string) {
+	product := <-n
+	expdate := <-e
+	
+}
+	
 
 func checkout(itmNo string, qty int16) {
 	//
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Print("Enter Item Code: ")
+	//fmt.Print("Enter Item Code: ")
     itemCode, _ := reader.ReadString('\n')
 	
-	fmt.Print("Enter Item Name: ")
+	//fmt.Print("Enter Item Name: ")
     itemName, _ := reader.ReadString('\n')
     
-	fmt.Print("Enter Qty: ")
+	//fmt.Print("Enter Qty: ")
     qty, _ := reader.ReadString('\n')
 
 
@@ -135,7 +144,7 @@ func currentStock(jsonString string) {
 
 // do sum process when connected
 func handleConnection(c net.Conn) {
-	// print display on screen from server
+	// print display on screen
 	fmt.Printf("Serving %s\n", c.RemoteAddr().String())
 	for {
 		netData, err := bufio.NewReader(c).ReadString('\n')
@@ -160,6 +169,4 @@ func handleConnection(c net.Conn) {
 		c.Write([]byte(string(result)))
 	}
 	c.Close()
-	
-	
 } // .End handleConnection
