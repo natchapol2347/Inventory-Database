@@ -21,6 +21,7 @@ import (
 var (
 	db    *sql.DB
 	mutex sync.Mutex
+
 )
 
 func main() {
@@ -60,23 +61,23 @@ func handleClientRequest(con net.Conn) {
 				return
 			} else if clientRequest == "1" {
 				log.Println("Insert items")
-				message = "Insert items"
+				// message = "Insert items"
 				number = 1
 			} else if clientRequest == "2" {
 				log.Println("Remove items")
-				message = "Remove items"
+				// message = "Remove items"
 				number = 2
 			} else if clientRequest == "3" {
 				log.Println("Check current stock")
-				message = "Check current stock"
+				// message = "Check current stock"
 				number = 3
 			} else if clientRequest == "4" {
 				log.Println("Check record for insert")
-				message = "Check record for insert"
+				// message = "Check record for insert"
 				number = 4
 			} else if clientRequest == "5" {
 				log.Println("Check record for remove")
-				message = "Check record for remove"
+				// message = "Check record for remove"
 				number = 5
 			} else {
 				log.Println("Please provide numbers 1-5")
@@ -94,34 +95,40 @@ func handleClientRequest(con net.Conn) {
 			endin := make(chan int)
 			go Going_in(endin, "1", 1, 1)
 			// time.Sleep(time.Millisecond)
+			message = "The item has been added"
 			<-endin
 		} else if number == 2 {
 			// db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
 			endout := make(chan int)
 			go Going_out(endout, "1", 1, 1)
 			// time.Sleep(time.Millisecond)
+			message = "The item has been removed"
 			<-endout
 		} else if number == 3 {
 			// db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
 			endcur := make(chan int)
-			go Show_current(endcur, "1")
+			me := make(chan string)
+			go Show_current(endcur, "1",me)
 			// time.Sleep(time.Millisecond)
+			message = <-me
 			<-endcur
 		} else if number == 4 {
 			// db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
 			endrecin := make(chan int)
-			go Show_record_in(endrecin, "1")
+			me := make(chan string)
+			go Show_record_in(endrecin, "1",me)
 			// time.Sleep(time.Millisecond)
 			<-endrecin
 		} else if number == 5 {
 			// db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
 			endrecout := make(chan int)
-			go Show_record_out(endrecout, "1")
+			me := make(chan string)
+			go Show_record_out(endrecout, "1",me)
 			// time.Sleep(time.Millisecond)
 			<-endrecout
 		}
 		// Responding to the client request
-		_, err = con.Write([]byte(message + "\n"))
+		_, err = con.Write([]byte(message+"\n"))
 		if err != nil {
 			log.Printf("failed to respond to client: %v\n", err)
 		}
@@ -248,12 +255,12 @@ func Insertingitem(name string, quantity int, expdate int, id int) {
 	db.Exec("INSERT INTO items(name,quantity,expdate,id) VALUES (?,?,?,?)", name, quantity, expdate, id)
 }
 
-func Show_current(endrec chan int, name string) {
+func Show_current(endrec chan int, name string, me chan string) {
 	rows, err := db.Query("SELECT * FROM items")
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("current items: \n")
+	whole := "current items: \n"
 	for rows.Next() {
 		var name string
 		var quantity int
@@ -263,18 +270,21 @@ func Show_current(endrec chan int, name string) {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("name: ", name, "\t quantity: ", quantity, "\t expdate: ", expdate, "\t id: ", id, "\n")
+		line := "name: "+ name+ "\t quantity: "+ strconv.Itoa(quantity)+ "\t expdate: "+ strconv.Itoa(expdate)+ "\t id: "+strconv.Itoa(id)+"\n"
+		whole = whole+line
 	}
+	fmt.Println(whole)
+	me<-whole
 	num, _ := strconv.Atoi(name)
 	endrec <- num
 }
 
-func Show_record_in(endrec chan int, name string) {
+func Show_record_in(endrec chan int, name string,me chan string) {
 	rows, err := db.Query("SELECT * FROM import")
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("record in: \n")
+	whole := "current items: \n"
 	for rows.Next() {
 		var name string
 		var quantity int
@@ -285,18 +295,21 @@ func Show_record_in(endrec chan int, name string) {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("name: ", name, "\t quantity: ", quantity, "\t expdate: ", expdate, "\t id: ", id, "\t user: ", user, "\n")
+		line := "name: "+ name+ "\t quantity: "+ strconv.Itoa(quantity)+ "\t expdate: "+ strconv.Itoa(expdate)+ "\t id: "+strconv.Itoa(id)+"\n"
+		whole = whole+line
 	}
+	fmt.Println(whole)
+	me<-whole
 	num, _ := strconv.Atoi(name)
 	endrec <- num
 }
 
-func Show_record_out(endrec chan int, name string) {
+func Show_record_out(endrec chan int, name string,me chan string) {
 	rows, err := db.Query("SELECT * FROM export")
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("record out: \n")
+	whole := "current items: \n"
 	for rows.Next() {
 		var name string
 		var quantity int
@@ -307,8 +320,11 @@ func Show_record_out(endrec chan int, name string) {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("name: ", name, "\t quantity: ", quantity, "\t expdate: ", expdate, "\t id: ", id, "\t user: ", user, "\n")
+		line := "name: "+ name+ "\t quantity: "+ strconv.Itoa(quantity)+ "\t expdate: "+ strconv.Itoa(expdate)+ "\t id: "+strconv.Itoa(id)+"\n"
+		whole = whole+line
 	}
+	fmt.Println(whole)
+	me<-whole
 	num, _ := strconv.Atoi(name)
 	endrec <- num
 }
