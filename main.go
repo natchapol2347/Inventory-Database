@@ -19,37 +19,47 @@ type ProductItem struct {
 	qty  int
 }
 
-
-
+//Landing, start here end here, need port from server, which is ("tcp", "0.0.0.0:9999")
 func main() {
-	//connect to server with host and port
 	arguments := os.Args
         if len(arguments) == 1 {
                 fmt.Println("Please provide host:port.")
                 return
         }
-	
+
+		//Connect to server
         CONNECT := arguments[1]
-	//connect with server
+		//object, error
         c, err := net.Dial("tcp", CONNECT)
-	//error condition
         if err != nil {
                 fmt.Println(err)
                 return
         }
 
-
-		// call menu 
-		go selectMenu()
-
-
-
-        for {
+        for {   //simulate random 1-5 number
 				// display menu and wait to display on screen
-				go selecrtMenu()
+				//go selecrtMenu()
+
+				start2 := time.Now() //start what time
+				fmt.Print(start2) //display time
+				n = 100 //variable
+				for i := 0; i < n; i++ {
+					go checkin(endin, strconv.Itoa(i), 1, 10)
+				} //loop end for each loop for each individual number
+				  //to check how good is server
+
+				for i := 0; i < n; i++ {
+					go checkout(endin, strconv.Itoa(i), 1, 10)
+				}
+
+				for i := 0; i < n; i++ {
+					go connectToCurrentStock("test product")
+				}
+				start2 := time.Now() //stop what time
+				fmt.Print(start2) // display time
 
                 reader := bufio.NewReader(os.Stdin)
-                fmt.Print(">> ")
+                //fmt.Print(">> ")
 
                 text, _ := reader.ReadString('\n')
                 
@@ -58,10 +68,8 @@ func main() {
 
                 message, _ := bufio.NewReader(c).ReadString('\n')
                 fmt.Print("->: " + message)
-
-
-		//Type stop to exit
-                if strings.TrimSpace(string(text)) == "STOP" {
+				
+                if strings.TrimSpace(string(text)) == "QUIT" {
                         fmt.Println("TCP client exiting...")
                         return
                 }
@@ -70,7 +78,6 @@ func main() {
 } // .end main
 
 func int selectMenu() {
-	//Create menu for input
 	fmt.Print("Menu Program \n")
 	fmt.Print("1. Input Item\n")
 	fmt.Print("2. Checkout Item\n")
@@ -83,49 +90,81 @@ func int selectMenu() {
 }
 
 func checkin(itmNo string, qty int16) {
-	//manual enter
-	reader := bufio.NewReader(os.Stdin)
-
-	fmt.Print("Enter Item Code: ")
-    itemCode, _ := reader.ReadString('\n')
-	
-    
-	fmt.Print("Enter Qty: ")
-    qty, _ := reader.ReadString('\n')
-
-	go connectToCheckin()
-
-	// print display on screen
-	fmt.Printf("Item added %s\n", itemCode)
-
-} //. End checkin
-
-func connectToChekcin(){
-
-}
-
-func connectToChekcout(){
-	
-}
-
-func checkout(itmNo string, qty int16) {
+	start2 := time.Now() //start what time
+	fmt.Print(start2) //display time
 	//
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Print("Enter Item Code: ")
-    itemCode, _ := reader.ReadString('\n')
+	//fmt.Print("Enter Item Code: ")
+    itemCode = 123 //, _ := reader.ReadString('\n')
 	
-	fmt.Print("Enter Item Name: ")
-    itemName, _ := reader.ReadString('\n')
     
-	fmt.Print("Enter Qty: ")
-    qty, _ := reader.ReadString('\n')
+	//fmt.Print("Enter Qty: ")
+    qty = 2//, _ := reader.ReadString('\n')
 
-
-	go connectToCheckout()
+	go connectToCheckin() //prep to connect server for function checkin
 
 	// print display on screen
-	fmt.Printf("Item got %s\n", itemCode)
+	fmt.Printf("Item added %s\n", itemCode)
+	start2 := time.Now() //start what time
+	fmt.Print(start2) //display time
+} //. End checkin
+
+//make sure data is send to server
+func connectToChekcinn chan string, e chan int, quantity int, id int, name string, con net.Conn) {
+	//defer con.Close()
+ 
+	clientReader := bufio.NewReader(con)
+
+	product := <-n
+	expdate := <-e
+
+	// Responding to the client request
+	_, err = con.Write([]byte("1\n")) //send data back to server
+	
+}
+
+func connectToChekcout(n chan string, e chan int, quantity int, id int, name string, con net.Conn) {
+	//defer con.Close()
+ 
+	clientReader := bufio.NewReader(con)
+	product := <-n
+	expdate := <-e
+	
+	// Responding to the client request
+	_, err = con.Write([]byte("2\n"))
+}
+
+func connectToCurrentStock(name string, con net.Conn) {
+	//defer con.Close()
+ 
+	clientReader := bufio.NewReader(con)
+	product := <-n
+	expdate := <-e
+	
+	// Responding to the client request
+	_, err = con.Write([]byte("3," + name + "\n")) //server send as a packet then client send back
+}
+	
+
+func checkout(itmNo string, qty int16) {
+	//receive parameter and check in server
+	reader := bufio.NewReader(os.Stdin)
+
+	//fmt.Print("Enter Item Code: ")
+    itemCode = 10 //, _ := reader.ReadString('\n')
+	
+	//fmt.Print("Enter Item Name: ")
+    itemName = "sss" //, _ := reader.ReadString('\n')
+    
+	//fmt.Print("Enter Qty: ")
+    qty = 0 //, _ := reader.ReadString('\n')
+
+
+	go connectToCheckout()//stimulate function in server to send back data
+
+	// print display on screen
+	// fmt.Printf("Item got %s\n", itemCode)
 
 } //. End checkout
 
@@ -135,7 +174,7 @@ func currentStock(jsonString string) {
 
 // do sum process when connected
 func handleConnection(c net.Conn) {
-	// print display on screen from server
+	// print display on screen
 	fmt.Printf("Serving %s\n", c.RemoteAddr().String())
 	for {
 		netData, err := bufio.NewReader(c).ReadString('\n')
@@ -150,16 +189,8 @@ func handleConnection(c net.Conn) {
 			break
 		}
 
-
-		while () {
-
-		}
-
-
 		result := "test\n"
 		c.Write([]byte(string(result)))
 	}
 	c.Close()
-	
-	
 } // .End handleConnection
