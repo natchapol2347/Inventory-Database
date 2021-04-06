@@ -21,7 +21,7 @@ func main() {
 	}
 	defer con.Close()
 
-	n := 2000
+	n := 1000
 	start_whole := time.Now()
 	end := make(chan int, n)
 	for i := 0; i < n; i++ {
@@ -39,13 +39,14 @@ func main() {
 func client(end chan int, con net.Conn, err error, start time.Time) {
 	start_each := time.Now()
 	serverReader := bufio.NewReader(con)
-	clientRequest := strconv.Itoa(rand.Intn(2) + 1)
+	clientRequest := strconv.Itoa(rand.Intn(3) + 1)
+	// clientRequest := "3"
 	if _, err = con.Write([]byte(clientRequest + "\n")); err != nil {
 		log.Printf("failed to send the client request: %v\n", err)
 	}
 
 	// Waiting for the server response
-	serverResponse, err := serverReader.ReadString('\n')
+	serverResponse, err := serverReader.ReadString('.')
 
 	switch err {
 	case nil:
