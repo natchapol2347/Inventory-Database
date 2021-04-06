@@ -95,14 +95,14 @@ func handleClientRequest(con net.Conn) {
 			endin := make(chan int)
 			go Going_in(endin, "1", 1, 1)
 			// time.Sleep(time.Millisecond)
-			message = "The item has been added"
+			message = "The item has been added."
 			<-endin
 		} else if number == 2 {
 			// db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
 			endout := make(chan int)
 			go Going_out(endout, "1", 1, 1)
 			// time.Sleep(time.Millisecond)
-			message = "The item has been removed"
+			message = "The item has been removed."
 			<-endout
 		} else if number == 3 {
 			// db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
@@ -273,6 +273,7 @@ func Show_current(endrec chan int, name string, me chan string) {
 		line := "name: "+ name+ "\t quantity: "+ strconv.Itoa(quantity)+ "\t expdate: "+ strconv.Itoa(expdate)+ "\t id: "+strconv.Itoa(id)+"\n"
 		whole = whole+line
 	}
+	whole = whole+"."
 	fmt.Println(whole)
 	me<-whole
 	num, _ := strconv.Atoi(name)
@@ -298,6 +299,7 @@ func Show_record_in(endrec chan int, name string,me chan string) {
 		line := "name: "+ name+ "\t quantity: "+ strconv.Itoa(quantity)+ "\t expdate: "+ strconv.Itoa(expdate)+ "\t id: "+strconv.Itoa(id)+"\n"
 		whole = whole+line
 	}
+	whole = whole+"."
 	fmt.Println(whole)
 	me<-whole
 	num, _ := strconv.Atoi(name)
@@ -323,6 +325,7 @@ func Show_record_out(endrec chan int, name string,me chan string) {
 		line := "name: "+ name+ "\t quantity: "+ strconv.Itoa(quantity)+ "\t expdate: "+ strconv.Itoa(expdate)+ "\t id: "+strconv.Itoa(id)+"\n"
 		whole = whole+line
 	}
+	whole = whole+"."
 	fmt.Println(whole)
 	me<-whole
 	num, _ := strconv.Atoi(name)
