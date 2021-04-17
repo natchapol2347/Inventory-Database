@@ -9,6 +9,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -93,14 +94,14 @@ func handleClientRequest(con net.Conn) {
 		if number == 1 {
 			// db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
 			endin := make(chan int)
-			go Going_in(endin, "1", 1, 1)
+			go Going_in(endin, strconv.Itoa(rand.Intn(10) + 1), rand.Intn(10) + 1, rand.Intn(1000) + 1)
 			// time.Sleep(time.Millisecond)
 			message = "The item has been added."
 			<-endin
 		} else if number == 2 {
 			// db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
 			endout := make(chan int)
-			go Going_out(endout, "1", 1, 1)
+			go Going_out(endout, strconv.Itoa(rand.Intn(10) + 1), rand.Intn(10) + 1, rand.Intn(1000) + 1)
 			// time.Sleep(time.Millisecond)
 			message = "The item has been removed."
 			<-endout
@@ -108,7 +109,7 @@ func handleClientRequest(con net.Conn) {
 			// db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
 			endcur := make(chan int)
 			me := make(chan string)
-			go Show_current(endcur, "1",me)
+			go Show_current(endcur, strconv.Itoa(rand.Intn(10) + 1),me)
 			// time.Sleep(time.Millisecond)
 			message = <-me
 			<-endcur
@@ -116,15 +117,17 @@ func handleClientRequest(con net.Conn) {
 			// db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
 			endrecin := make(chan int)
 			me := make(chan string)
-			go Show_record_in(endrecin, "1",me)
+			go Show_record_in(endrecin, strconv.Itoa(rand.Intn(10) + 1),me)
 			// time.Sleep(time.Millisecond)
+			message = <-me
 			<-endrecin
 		} else if number == 5 {
 			// db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
 			endrecout := make(chan int)
 			me := make(chan string)
-			go Show_record_out(endrecout, "1",me)
+			go Show_record_out(endrecout, strconv.Itoa(rand.Intn(10) + 1),me)
 			// time.Sleep(time.Millisecond)
+			message = <-me
 			<-endrecout
 		}
 		// Responding to the client request
@@ -262,7 +265,7 @@ func Show_current(endrec chan int, name string, me chan string) {
 	}
 	whole := "current items: \n"
 	for rows.Next() {
-		var name string
+		var namee string
 		var quantity int
 		var expdate int
 		var id int
@@ -270,7 +273,7 @@ func Show_current(endrec chan int, name string, me chan string) {
 		if err != nil {
 			panic(err)
 		}
-		line := "name: "+ name+ "\t quantity: "+ strconv.Itoa(quantity)+ "\t expdate: "+ strconv.Itoa(expdate)+ "\t id: "+strconv.Itoa(id)+"\n"
+		line := "name: "+ namee+ " quantity: "+ strconv.Itoa(quantity)+ " expdate: "+ strconv.Itoa(expdate)+ " id: "+strconv.Itoa(id)+"\n"
 		whole = whole+line
 	}
 	whole = whole+"."
@@ -285,18 +288,18 @@ func Show_record_in(endrec chan int, name string,me chan string) {
 	if err != nil {
 		panic(err)
 	}
-	whole := "current items: \n"
+	whole := "record for import: \n"
 	for rows.Next() {
-		var name string
+		var namee string
 		var quantity int
 		var expdate int
 		var id int
 		var user string
-		err = rows.Scan(&name, &quantity, &expdate, &id, &user)
+		err = rows.Scan(&namee, &quantity, &expdate, &id, &user)
 		if err != nil {
 			panic(err)
 		}
-		line := "name: "+ name+ "\t quantity: "+ strconv.Itoa(quantity)+ "\t expdate: "+ strconv.Itoa(expdate)+ "\t id: "+strconv.Itoa(id)+"\n"
+		line := "name: "+ namee+ " quantity: "+ strconv.Itoa(quantity)+ " expdate: "+ strconv.Itoa(expdate)+ " id: "+strconv.Itoa(id)+" user: "+user+"\n"
 		whole = whole+line
 	}
 	whole = whole+"."
@@ -311,18 +314,18 @@ func Show_record_out(endrec chan int, name string,me chan string) {
 	if err != nil {
 		panic(err)
 	}
-	whole := "current items: \n"
+	whole := "record for export: \n"
 	for rows.Next() {
-		var name string
+		var namee string
 		var quantity int
 		var expdate int
 		var id int
 		var user string
-		err = rows.Scan(&name, &quantity, &expdate, &id, &user)
+		err = rows.Scan(&namee, &quantity, &expdate, &id, &user)
 		if err != nil {
 			panic(err)
 		}
-		line := "name: "+ name+ "\t quantity: "+ strconv.Itoa(quantity)+ "\t expdate: "+ strconv.Itoa(expdate)+ "\t id: "+strconv.Itoa(id)+"\n"
+		line := "name: "+ namee+ " quantity: "+ strconv.Itoa(quantity)+ " expdate: "+ strconv.Itoa(expdate)+ " id: "+strconv.Itoa(id)+" user: "+user+"\n"
 		whole = whole+line
 	}
 	whole = whole+"."
