@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
 	"net"
 	"strconv"
 	"strings"
-	"math/rand"
 	"sync"
 	"time"
 
@@ -22,16 +22,18 @@ import (
 var (
 	db    *sql.DB
 	mutex sync.Mutex
-
 )
 
 func main() {
 
 	listener, err := net.Listen("tcp", "0.0.0.0:9999")
+
 	if err != nil {
 		log.Fatalln(err)
 	}
+
 	defer listener.Close()
+
 	for {
 		con, err := listener.Accept()
 		if err != nil {
@@ -43,21 +45,33 @@ func main() {
 	}
 }
 
+// manage handle when have client connect
 func handleClientRequest(con net.Conn) {
 	defer con.Close()
 
+	// read connection
 	clientReader := bufio.NewReader(con)
 	db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
 	for {
 		// Waiting for the client request
 		clientRequest, err := clientReader.ReadString('\n')
+
+		// assign message to variable
 		message := "Please provide numbers 1-5"
+
+		// assign number
 		number := 0
+
 		switch err {
+
+		// case nil
 		case nil:
 
+			// get string from clientRequest
 			clientRequest := strings.TrimSpace(clientRequest)
+
 			if clientRequest == "QUIT" {
+				// close connection and return nil
 				log.Println("client requested server to close the connection so closing")
 				return
 			} else if clientRequest == "1" {
@@ -81,27 +95,34 @@ func handleClientRequest(con net.Conn) {
 				// message = "Check record for remove"
 				number = 5
 			} else {
+				// if number not in 1-5
 				log.Println("Please provide numbers 1-5")
 			}
 		case io.EOF:
+			// if end of file do terminate and return nill
 			log.Println("client closed the connection by terminating the process")
 			return
 		default:
+			// if not match any case say error and return nil
 			log.Printf("error: %v\n", err)
 			return
 		}
 
+		/**
+		* if var number == 1-5 do any function by number match
+		 */
 		if number == 1 {
 			// db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
 			endin := make(chan int)
-			go Going_in(endin, strconv.Itoa(rand.Intn(10) + 1), rand.Intn(10) + 1, rand.Intn(1000) + 1)
+			go Going_in(endin, strconv.Itoa(rand.Intn(10)+1), rand.Intn(10)+1, rand.Intn(1000)+1)
 			// time.Sleep(time.Millisecond)
+			// assign message
 			message = "The item has been added."
 			<-endin
 		} else if number == 2 {
 			// db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
 			endout := make(chan int)
-			go Going_out(endout, strconv.Itoa(rand.Intn(10) + 1), rand.Intn(10) + 1, rand.Intn(1000) + 1)
+			go Going_out(endout, strconv.Itoa(rand.Intn(10)+1), rand.Intn(10)+1, rand.Intn(1000)+1)
 			// time.Sleep(time.Millisecond)
 			message = "The item has been removed."
 			<-endout
@@ -109,7 +130,7 @@ func handleClientRequest(con net.Conn) {
 			// db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
 			endcur := make(chan int)
 			me := make(chan string)
-			go Show_current(endcur, strconv.Itoa(rand.Intn(10) + 1),me)
+			go Show_current(endcur, strconv.Itoa(rand.Intn(10)+1), me)
 			// time.Sleep(time.Millisecond)
 			message = <-me
 			<-endcur
@@ -117,7 +138,7 @@ func handleClientRequest(con net.Conn) {
 			// db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
 			endrecin := make(chan int)
 			me := make(chan string)
-			go Show_record_in(endrecin, strconv.Itoa(rand.Intn(10) + 1),me)
+			go Show_record_in(endrecin, strconv.Itoa(rand.Intn(10)+1), me)
 			// time.Sleep(time.Millisecond)
 			message = <-me
 			<-endrecin
@@ -125,13 +146,15 @@ func handleClientRequest(con net.Conn) {
 			// db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
 			endrecout := make(chan int)
 			me := make(chan string)
-			go Show_record_out(endrecout, strconv.Itoa(rand.Intn(10) + 1),me)
+
+			go Show_record_out(endrecout, strconv.Itoa(rand.Intn(10)+1), me)
 			// time.Sleep(time.Millisecond)
 			message = <-me
 			<-endrecout
 		}
+
 		// Responding to the client request
-		_, err = con.Write([]byte(message+"\n"))
+		_, err = con.Write([]byte(message + "\n"))
 		if err != nil {
 			log.Printf("failed to respond to client: %v\n", err)
 		}
@@ -159,6 +182,10 @@ func Get_items(q chan int, e chan int, n chan string, id int) {
 		// fmt.Println("name: ", name, " quantity: ", quantity, " expdate: ", expdate)
 	}
 }
+
+/**
+ * Minus for deduct number from database
+ */
 func Minus(q chan int, c chan int, quantity int, id int) {
 	quantityy := <-q // channel from get_items
 	newQuantity := quantityy - quantity
@@ -171,6 +198,9 @@ func Minus(q chan int, c chan int, quantity int, id int) {
 	c <- 0
 }
 
+/**
+ * function Insertingex for insert export log item
+ */
 func Insertingex(n chan string, e chan int, quantity int, id int, name string) {
 	product := <-n
 	expdate := <-e
@@ -273,17 +303,17 @@ func Show_current(endrec chan int, name string, me chan string) {
 		if err != nil {
 			panic(err)
 		}
-		line := "name: "+ namee+ " quantity: "+ strconv.Itoa(quantity)+ " expdate: "+ strconv.Itoa(expdate)+ " id: "+strconv.Itoa(id)+"\n"
-		whole = whole+line
+		line := "name: " + namee + " quantity: " + strconv.Itoa(quantity) + " expdate: " + strconv.Itoa(expdate) + " id: " + strconv.Itoa(id) + "\n"
+		whole = whole + line
 	}
-	whole = whole+"."
+	whole = whole + "."
 	fmt.Println(whole)
-	me<-whole
+	me <- whole
 	num, _ := strconv.Atoi(name)
 	endrec <- num
 }
 
-func Show_record_in(endrec chan int, name string,me chan string) {
+func Show_record_in(endrec chan int, name string, me chan string) {
 	rows, err := db.Query("SELECT * FROM import")
 	if err != nil {
 		panic(err)
@@ -299,17 +329,17 @@ func Show_record_in(endrec chan int, name string,me chan string) {
 		if err != nil {
 			panic(err)
 		}
-		line := "name: "+ namee+ " quantity: "+ strconv.Itoa(quantity)+ " expdate: "+ strconv.Itoa(expdate)+ " id: "+strconv.Itoa(id)+" user: "+user+"\n"
-		whole = whole+line
+		line := "name: " + namee + " quantity: " + strconv.Itoa(quantity) + " expdate: " + strconv.Itoa(expdate) + " id: " + strconv.Itoa(id) + " user: " + user + "\n"
+		whole = whole + line
 	}
-	whole = whole+"."
+	whole = whole + "."
 	fmt.Println(whole)
-	me<-whole
+	me <- whole
 	num, _ := strconv.Atoi(name)
 	endrec <- num
 }
 
-func Show_record_out(endrec chan int, name string,me chan string) {
+func Show_record_out(endrec chan int, name string, me chan string) {
 	rows, err := db.Query("SELECT * FROM export")
 	if err != nil {
 		panic(err)
@@ -325,12 +355,44 @@ func Show_record_out(endrec chan int, name string,me chan string) {
 		if err != nil {
 			panic(err)
 		}
-		line := "name: "+ namee+ " quantity: "+ strconv.Itoa(quantity)+ " expdate: "+ strconv.Itoa(expdate)+ " id: "+strconv.Itoa(id)+" user: "+user+"\n"
-		whole = whole+line
+		line := "name: " + namee + " quantity: " + strconv.Itoa(quantity) + " expdate: " + strconv.Itoa(expdate) + " id: " + strconv.Itoa(id) + " user: " + user + "\n"
+		whole = whole + line
 	}
-	whole = whole+"."
+	whole = whole + "."
 	fmt.Println(whole)
-	me<-whole
+	me <- whole
 	num, _ := strconv.Atoi(name)
 	endrec <- num
 }
+
+func checkin(itmNo string, q int16, result chan<- string) {
+	start := time.Now() //start what time
+	fmt.Print(start)    //display time
+	itemCode := itmNo
+	qty := q
+
+	// print display on screen
+	fmt.Printf("Item added %s qty=%d\n", itemCode, qty)
+	start = time.Now() //start what time
+	fmt.Print(start)   //display time
+
+	my_res := "OK : checkin"
+
+	result <- my_res
+} //. End checkin
+
+func checkout(itmNo string, q int16, result chan<- string) {
+	start := time.Now() //start what time
+	fmt.Print(start)    //display time
+	itemCode := itmNo
+	qty := q
+
+	// print display on screen
+	fmt.Printf("Item had checkout %s qty=%d\n", itemCode, qty)
+	start = time.Now() //start what time
+	fmt.Print(start)   //display time
+
+	my_res := "OK : checkout"
+
+	result <- my_res
+} //. End checkin
