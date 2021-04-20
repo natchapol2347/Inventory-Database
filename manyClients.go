@@ -39,8 +39,8 @@ func main() {
 func client(end chan int, con net.Conn, err error, start time.Time) {
 	start_each := time.Now()
 	serverReader := bufio.NewReader(con)
-	clientRequest := strconv.Itoa(rand.Intn(3) + 1)
-	// clientRequest := "3"
+	clientRequest := strconv.Itoa(rand.Intn(2) + 1)
+	// clientRequest := "4"
 	if _, err = con.Write([]byte(clientRequest + "\n")); err != nil {
 		log.Printf("failed to send the client request: %v\n", err)
 	}
