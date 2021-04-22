@@ -33,7 +33,7 @@ func main() {
 }
 
 func client(end chan int, start time.Time) {
-	con, err := net.Dial("tcp", "0.0.0.0:5678")
+	con, err := net.Dial("tcp", "127.0.0.1:8888")
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -63,7 +63,7 @@ func client(end chan int, start time.Time) {
 			}
 			fmt.Printf("time each: %v\n", time.Since(start)-time.Since(start_each))
 		}
-		end <- 0
-		
+			end <- 0
+			
 		
 }
