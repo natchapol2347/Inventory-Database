@@ -57,11 +57,12 @@ func newItemNode(in_name string, key int, value int) *cacheItem{
 		last_promoted: time.Time{},
 	}
 }
-func (c *Cache) insert_tail(name string,key int, value int) *cacheItem{
+func (c *Cache) insert_tail(exist chan bool, newItem *cacheItem) {
 	//make new item from argument
-	
-	newItem := newItemNode(name, key, value)
-	if(c.tail == nil && c.head == nil){
+	if _, ok := c.items[newItem.serial]; ok{
+		exist <- true
+
+	}else if(c.tail == nil && c.head == nil){
 		c.tail = newItem
 		c.head = newItem
 
@@ -71,7 +72,6 @@ func (c *Cache) insert_tail(name string,key int, value int) *cacheItem{
 		c.tail = newItem
 	}
 	
-	return newItem
 
 }
 
@@ -185,6 +185,7 @@ func (c *Cache) get(end chan int, name string, key int, load int) {
 
 func (c *Cache) put(end chan int, name string,key int, load int) {
 	//if there's already key in cache just add 
+	log.Println("suck this head")
 	c.mu.Lock()
 	if _, ok := c.items[key]; ok {
 		log.Println("ficll")
@@ -240,13 +241,19 @@ func (c *Cache) put(end chan int, name string,key int, load int) {
 		log.Println("dsfsdf")
 		load := <- y
 		log.Println("heeehhe")
-		page := c.insert_tail(name, key, load)
-		c.size++
+		
+		newItem := newItemNode(name, key, load)
 		c.mu.Lock()
-		c.items[key] = page
+		c.items[key] = newItem
 		c.mu.Unlock()
+		c.mu.Lock()
+		c.insert_tail(newItem)
+		c.mu.Unlock()
+		c.size++
+		
+		
 		log.Println("les go")
-		return
+		
 	}
 	
 	// select{
