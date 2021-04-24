@@ -69,7 +69,7 @@ func (c *Cache) insert_tail(name string,key int, value int) *cacheItem{
 		c.tail.prev = newItem
 		c.tail = newItem
 	}
-
+	
 	return newItem
 
 }
@@ -192,7 +192,7 @@ func (c *Cache) put(end chan int, name string,key int, load int) {
 		res.mu.Unlock()
 		c.promote(c.items[key])
 		fmt.Println("yoyo")
-		go going_in(nil,end, name, key, load)
+		go going_in(nil,nil,end, name, key, load)
 		<- end
 		return
 	}
@@ -209,47 +209,61 @@ func (c *Cache) put(end chan int, name string,key int, load int) {
 	//insert new node
 	
 	x := make(chan bool) 
-	defer close(x)
-	go going_in(x,end, name, key, load)
+	y := make(chan int)
 
-
-	select{
-		case inDB := <-x:
-			{
-				if(!inDB){
-					log.Println("not here")
-					<- end
-					return 
-				}
-			}
-		default:
-			{
-				log.Println("channel not ready")
-			}
+	go going_in(y, x,end, name, key, load)
+	inDB :=<-x
+	// select{
+	// 	case inDB := <-x:
+	// 		{
+	// 			if(!inDB){
+	// 				log.Println("not here")
+	// 				<- end
+	// 				return 
+	// 			}
+	// 		}
+	// 	default:
+	// 		{
+	// 			log.Println("channel not ready")
+	// 		}
 			
 
-		}
-	// if(!<-x){
-	// 	log.Println("not here")
-	// 	<-end
-	// 	return
+	// 	}
+	if(!inDB){
+		log.Println("not here")
+		<-end
+		return
 
-	// }else{
-	// 	log.Println("channel not ready")
+	}else{
+		log.Println("dsfsdf")
+		load := <- y
+		log.Println("heeehhe")
+		page := c.insert_tail(name, key, load)
+		c.size++
+		c.mu.Lock()
+		c.items[key] = page
+		c.mu.Unlock()
+		log.Println("les go")
+		return
+	}
+	
+	// select{
+	// case load:= <- end:
+	// 	{
+	// 		log.Printf("there is %d \n", load)
+	// 		page := c.insert_tail(name, key, load)
+	// 		c.size++
+	// 		c.mu.Lock()
+	// 		c.items[key] = page
+	// 		c.mu.Unlock()
+	// 		log.Println("les go")
+	// 	}
+	// default:
+	// 	log.Printf("waiting to receive")
 	// }
-
-	load = <- end
-	page := c.insert_tail(name, key, load)
-	c.size++
-	c.mu.Lock()
-	c.items[key] = page
-	c.mu.Unlock()
-	log.Println("les go")
 	
-	return
-
 	
-
+	
 }
 func read(c chan int){
 
@@ -362,7 +376,7 @@ func insertingim(n chan string, e chan int, quantity int, id int, name string) {
 	db.Exec("INSERT INTO import(name, quantity, expdate,id,user) VALUES (?, ?, ?, ?, ?)", product, quantity, expdate, id, name)
 }
 
-func going_in(sig chan bool, end chan int, name string, id int, quantity int) {
+func going_in(retQuantity chan int ,sig chan bool, end chan int, name string, id int, quantity int) {
 	c := make(chan int)
 	q := make(chan int)
 	e := make(chan int)
@@ -372,7 +386,6 @@ func going_in(sig chan bool, end chan int, name string, id int, quantity int) {
 		mutex.Lock()
 		go get_items(q, e, n, id)
 		go increment(q, c, quantity, id)
-		sig <-true
 		<-c // wait for all go routines
 		mutex.Unlock()
 	} else {
@@ -380,18 +393,27 @@ func going_in(sig chan bool, end chan int, name string, id int, quantity int) {
 		sig <- false
 		
 	}
+	log.Println("wttf")
 	go insertingim(n, e, quantity, id, name)
 	// fmt.Printf("time: %v\n", time.Since(start))
-
+	log.Println("ee")
 	go get_items(q,e,n,id)
-	num := <-q + quantity
-	sig <- true
-	log.Println(num)
+	log.Println("aa")
 
-	end <- num
+	num := <-q + quantity
+	log.Println("oo")
+
+	sig <- true
+	log.Println("uu")
+
+	log.Println(num)
+	retQuantity <- num
+
+	retName, _:= strconv.Atoi(name)
+	end <- retName
 	
-	
-	return 
+	log.Println("haha")
+
 }
 
 func rowExists(query string, args ...interface{}) bool {
@@ -485,6 +507,8 @@ func main(){
 	cache:= newCache(5)
 
 	go cache.put(result, "fruit", 1, 30)
+	go cache.put(result, "1132", 1, 20)
+
 	// cache.get(result, "fu ",6, 1)
 	// db.Exec("update items set quantity = ? where id = ? ", 2000, 6)
 	// cache.get(result,"444",1,10)
