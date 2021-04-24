@@ -192,7 +192,7 @@ func (c *Cache) put(end chan int, name string,key int, load int) {
 		res.mu.Unlock()
 		c.promote(c.items[key])
 		fmt.Println("yoyo")
-		go going_in(end, name, key, load)
+		go going_in(nil,end, name, key, load)
 		<- end
 		return
 	}
@@ -207,16 +207,51 @@ func (c *Cache) put(end chan int, name string,key int, load int) {
 		c.mu.Unlock()
 	}
 	//insert new node
+	
+	x := make(chan bool) 
+	defer close(x)
+	go going_in(x,end, name, key, load)
+
+
+	select{
+		case inDB := <-x:
+			{
+				if(!inDB){
+					log.Println("not here")
+					<- end
+					return 
+				}
+			}
+		default:
+			{
+				log.Println("channel not ready")
+			}
+			
+
+		}
+	// if(!<-x){
+	// 	log.Println("not here")
+	// 	<-end
+	// 	return
+
+	// }else{
+	// 	log.Println("channel not ready")
+	// }
+
+	load = <- end
 	page := c.insert_tail(name, key, load)
 	c.size++
 	c.mu.Lock()
 	c.items[key] = page
 	c.mu.Unlock()
-	go going_in(end, name, key, load)
-	<- end
+	log.Println("les go")
+	
 	return
 
 	
+
+}
+func read(c chan int){
 
 }
 
@@ -270,7 +305,7 @@ func decrement(q chan int, c chan int, quantity int, id int) {
 	}
 	fmt.Println("the items left in stock: ", newQuantity)
 	db.Exec("update items set quantity = ? where id = ? ", newQuantity, id)
-	log.Println("sus2")
+	log.Println(newQuantity)
 	c <- 0
 }
 
@@ -307,7 +342,7 @@ func going_out(sig chan bool, end chan int, name string, id int, quantity int) {
 	sig <- true
 	fmt.Println("hey?")
 	fmt.Println("hello?")
-	return
+	return	
 }
 
 func increment(q chan int, c chan int, quantity int, id int) {
@@ -327,26 +362,32 @@ func insertingim(n chan string, e chan int, quantity int, id int, name string) {
 	db.Exec("INSERT INTO import(name, quantity, expdate,id,user) VALUES (?, ?, ?, ?, ?)", product, quantity, expdate, id, name)
 }
 
-func going_in(end chan int, name string, id int, quantity int) {
+func going_in(sig chan bool, end chan int, name string, id int, quantity int) {
 	c := make(chan int)
 	q := make(chan int)
 	e := make(chan int)
 	n := make(chan string)
+	
 	if rowExists("SELECT * FROM items WHERE id = ?", id) {
 		mutex.Lock()
 		go get_items(q, e, n, id)
 		go increment(q, c, quantity, id)
+		sig <-true
 		<-c // wait for all go routines
 		mutex.Unlock()
 	} else {
 		insertingitem("New  with id "+strconv.Itoa(id), quantity, 0, id)
-		
+		sig <- false
 		
 	}
 	go insertingim(n, e, quantity, id, name)
 	// fmt.Printf("time: %v\n", time.Since(start))
 
-	num, _ := strconv.Atoi(name)
+	go get_items(q,e,n,id)
+	num := <-q + quantity
+	sig <- true
+	log.Println(num)
+
 	end <- num
 	
 	
@@ -443,10 +484,11 @@ func main(){
 	// sig:= make(chan *cacheItem, 100)
 	cache:= newCache(5)
 
-	cache.put(result, "fruit", 1, 30)
-	cache.get(result, "fu ",6, 1)
+	go cache.put(result, "fruit", 1, 30)
+	// cache.get(result, "fu ",6, 1)
+	// db.Exec("update items set quantity = ? where id = ? ", 2000, 6)
 	// cache.get(result,"444",1,10)
-	// <- result
+	<- result
 	
 	
 	// cache.get(sig, result,"album",23,90)
