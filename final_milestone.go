@@ -57,12 +57,11 @@ func newItemNode(in_name string, key int, value int) *cacheItem{
 		last_promoted: time.Time{},
 	}
 }
-func (c *Cache) insert_tail(exist chan bool, newItem *cacheItem) {
+func (c *Cache) insert_tail(newItem *cacheItem) {
 	//make new item from argument
-	if _, ok := c.items[newItem.serial]; ok{
-		exist <- true
+	
 
-	}else if(c.tail == nil && c.head == nil){
+	if(c.tail == nil && c.head == nil){
 		c.tail = newItem
 		c.head = newItem
 
@@ -70,6 +69,7 @@ func (c *Cache) insert_tail(exist chan bool, newItem *cacheItem) {
 		newItem.next = c.tail
 		c.tail.prev = newItem
 		c.tail = newItem
+		
 	}
 	
 
@@ -243,6 +243,7 @@ func (c *Cache) put(end chan int, name string,key int, load int) {
 		log.Println("heeehhe")
 		
 		newItem := newItemNode(name, key, load)
+	
 		c.mu.Lock()
 		c.items[key] = newItem
 		c.mu.Unlock()
