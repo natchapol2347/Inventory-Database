@@ -59,6 +59,7 @@ func newItemNode(in_name string, key int, value int) *cacheItem{
 }
 func (c *Cache) insert_tail(name string,key int, value int) *cacheItem{
 	//make new item from argument
+	
 	newItem := newItemNode(name, key, value)
 	if(c.tail == nil && c.head == nil){
 		c.tail = newItem
@@ -185,11 +186,12 @@ func (c *Cache) get(end chan int, name string, key int, load int) {
 func (c *Cache) put(end chan int, name string,key int, load int) {
 	//if there's already key in cache just add 
 	c.mu.Lock()
-	if res, ok := c.items[key]; ok {
+	if _, ok := c.items[key]; ok {
+		log.Println("ficll")
 		c.mu.Unlock()
-		res.mu.Lock()
-		res.quantity += load
-		res.mu.Unlock()
+		c.items[key].mu.Lock()
+		c.items[key].quantity += load
+		c.items[key].mu.Unlock()
 		c.promote(c.items[key])
 		fmt.Println("yoyo")
 		go going_in(nil,nil,end, name, key, load)
@@ -508,12 +510,14 @@ func main(){
 
 	go cache.put(result, "fruit", 1, 30)
 	go cache.put(result, "1132", 1, 20)
+	go cache.put(result, "223", 1, 20)
 
 	// cache.get(result, "fu ",6, 1)
 	// db.Exec("update items set quantity = ? where id = ? ", 2000, 6)
 	// cache.get(result,"444",1,10)
 	<- result
-	
+	<- result
+	<- result
 	
 	// cache.get(sig, result,"album",23,90)
 	// cache.put(sig, "wig",55,50)
