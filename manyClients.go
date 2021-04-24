@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 func main() {
-	con, err := net.Dial("tcp", "0.0.0.0:9999")
+	con, err := net.Dial("tcp", "128.199.64.63:9999")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -34,7 +34,7 @@ func client(end chan int, con net.Conn, err error, start time.Time) {
 	serverReader := bufio.NewReader(con)
 	clientRequest := strconv.Itoa(rand.Intn(3) + 1)
 	// clientRequest := "3"
-	clientRequest := strconv.Itoa(rand.Intn(2) + 1)
+	clientRequest = strconv.Itoa(rand.Intn(2) + 1)
 	// clientRequest := "4"
 	if _, err = con.Write([]byte(clientRequest + "\n")); err != nil {
 		log.Printf("failed to send the client request: %v\n", err)
