@@ -12,12 +12,13 @@ import (
 	"strings"
 )
 func main() {
-	con, err := net.Dial("tcp", "128.199.64.63:9999")
+	con, err := net.Dial("tcp", "128.199.64.63:5678")
+	//con, err := net.Dial("tcp", "128.199.64.79:9999")
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer con.Close()
-	n := 1000
+	n := 20000
 	start_whole := time.Now()
 	end := make(chan int, n)
 	for i := 0; i < n; i++ {
