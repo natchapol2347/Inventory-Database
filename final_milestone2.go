@@ -15,13 +15,17 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	// "github.com/golang/glog"
 )
-
+var (
+	db    *sql.DB
+	mutex sync.Mutex
+	mu 	  sync.RWMutex
+	wg 	  sync.WaitGroup
+)
 //Cache codes
 type Cache struct {
 	capacity int
 	size int
 	items    map[int]*cacheItem
-	mu       sync.Mutex
 	head     *cacheItem
 	tail     *cacheItem
 }
@@ -32,7 +36,6 @@ type cacheItem struct {
 	quantity int
 	next     *cacheItem
 	prev	 *cacheItem
-	mu       sync.Mutex
 	last_promoted time.Time
 }
 
@@ -41,7 +44,6 @@ func newCache(c int) *Cache {
 		capacity: c,
 		size: 0,
 		items:    make(map[int]*cacheItem),
-		mu:       sync.Mutex{},
 		head:     nil,
 		tail: 	  nil,
 	}
@@ -54,14 +56,14 @@ func newItemNode(in_name string, key int, value int) *cacheItem{
 		quantity: value,
 		next: nil,
 		prev: nil,
-		mu :     sync.Mutex{},
 		last_promoted: time.Time{},
 	}
 }
 func (c *Cache) insert_tail(newItem *cacheItem) {
 	//make new item from argument
 	
-
+	mutex.Lock()
+	defer mutex.Unlock()
 	if(c.tail == nil && c.head == nil){
 		c.tail = newItem
 		c.head = newItem
@@ -110,12 +112,12 @@ func (c *Cache) put(end chan int, name string,key int, load int) {
 			case i := <-exists:
 				{
 					log.Println(i)
-					c.mu.Lock()
+					mu.Lock()
 					c.items[key].quantity += load
-					c.mu.Unlock()
-					c.mu.Lock()
+					mu.Unlock()
+					mu.Lock()
 					c.promote(c.items[key])
-					c.mu.Unlock()
+					mu.Unlock()
 					go going_in(nil,nil,end, name, key, load)
 					<- end
 					
@@ -127,11 +129,11 @@ func (c *Cache) put(end chan int, name string,key int, load int) {
 					delKey := c.head.serial
 					c.pop()
 					c.size--
-					c.mu.Lock()
+					mu.Lock()
 					delete(c.items, delKey)
-					c.mu.Unlock()
+					mu.Unlock()
 				}
-				
+			
 			case k := <- insert:
 			{
 				log.Println(k)
@@ -145,17 +147,20 @@ func (c *Cache) put(end chan int, name string,key int, load int) {
 					<- end
 				}else{
 					log.Println("dsfsdf")
+					wg.Wait()
 					load := <- y
 					log.Println("heeehhe")
-					
+					wg.Wait()
 					newItem := newItemNode(name, key, load)
 				
-					c.mu.Lock()
+					mu.Lock()
+					wg.Wait()
 					c.items[key] = newItem
-					c.mu.Unlock()
-					c.mu.Lock()
+					mu.Unlock()
+					// mu.Lock()
+					wg.Wait()
 					c.insert_tail(newItem)
-					c.mu.Unlock()
+					// mu.Unlock()
 					c.size++
 					
 					
@@ -163,6 +168,7 @@ func (c *Cache) put(end chan int, name string,key int, load int) {
 				}
 			
 			}
+
 		
   	   }
 	}
@@ -194,14 +200,15 @@ func (c *Cache) printCache(){
 
 func (c *Cache) keyStateCache(existed chan string, full chan string, insert chan string, key int){
 	
-		c.mu.Lock()
+		mu.RLock()
+		wg.Wait()
 		if _, ok := c.items[key]; ok{
 			log.Println("yeet1")
 			go sendToChannel(existed, "EXISTS")
 			// existed <- "EXISTS"
 	
 		}
-		c.mu.Unlock()
+		mu.RUnlock()
 		
 		if c.size == c.capacity {
 			log.Println("yeet2")
@@ -219,9 +226,9 @@ func (c *Cache) keyStateCache(existed chan string, full chan string, insert chan
 	
 }
 func (c *Cache) get(end chan int, name string, key int, load int) {
-	c.mu.Lock()
+	mu.Lock()
 	if res, ok := c.items[key]; ok{
-		c.mu.Unlock()
+		mu.Unlock()
 		value := res.quantity
 		if(value - load < 0){
 			// fmt.Println("not enough in stock")
@@ -229,9 +236,9 @@ func (c *Cache) get(end chan int, name string, key int, load int) {
 			return 
 		}
 		c.promote(res)
-		res.mu.Lock()
+		mu.Lock()
 		c.items[key].quantity -= load 
-		res.mu.Unlock()
+		mu.Unlock()
 		// c.mu.Lock()
 		// result <- c.items[key]
 		// c.mu.Unlock()
@@ -242,7 +249,7 @@ func (c *Cache) get(end chan int, name string, key int, load int) {
 	}else{
 		//if there's no key
 		// fmt.Println("there's no key", key, "yet")
-		c.mu.Unlock()
+		mu.Unlock()
 		x := make(chan bool) 
 		defer close(x)
 		
@@ -283,28 +290,28 @@ func (c *Cache) get(end chan int, name string, key int, load int) {
 		return 
 		
 	}
-	c.mu.Lock()
+	mu.Lock()
 	if _, ok := c.items[key]; ok {
 		log.Println("ficll")
-		c.mu.Unlock()
-		c.items[key].mu.Lock()
+		mu.Unlock()
+		mu.Lock()
 		c.items[key].quantity += load
-		c.items[key].mu.Unlock()
+		mu.Unlock()
 		c.promote(c.items[key])
 		fmt.Println("yoyo")
 		go going_in(nil,nil,end, name, key, load)
 		<- end
 		return
 	}
-	c.mu.Unlock()
+	mu.Unlock()
 	//if cache is full delete last recent node
 	if c.size == c.capacity {
 		delKey := c.head.serial
 		c.pop()
 		c.size--
-		c.mu.Lock()
+		mu.Lock()
 		delete(c.items, delKey)
-		c.mu.Unlock()
+		mu.Unlock()
 	}
 	//insert new node
 	
@@ -341,12 +348,12 @@ func (c *Cache) get(end chan int, name string, key int, load int) {
 		
 		newItem := newItemNode(name, key, load)
 	
-		c.mu.Lock()
+		mu.Lock()
 		c.items[key] = newItem
-		c.mu.Unlock()
-		c.mu.Lock()
+		mu.Unlock()
+		mu.Lock()
 		c.insert_tail(newItem)
-		c.mu.Unlock()
+		mu.Unlock()
 		c.size++
 		
 		
@@ -384,22 +391,19 @@ func (c *Cache) promote(node *cacheItem) {
 	now := time.Now()
 	stale := now.Add(time.Minute * -1) // if more than one minute has pass allow for promotion
   
-	node.mu.Lock()
-	defer node.mu.Unlock()
+	mu.Lock()
+	defer mu.Unlock()
 	if node.last_promoted.Before(stale) {
 	  node.last_promoted = now
-	  c.mu.Lock()
-	  defer c.mu.Unlock()
+	  mu.Lock()
+	  defer mu.Unlock()
 	  c.moveToFront(node)
 	}
 	
   }
 
 //Database code
-var (
-	db    *sql.DB
-	mutex sync.Mutex
-)
+
 
 func get_items(q chan int, e chan int, n chan string, id int) {
 
@@ -640,5 +644,8 @@ func main(){
 	// cache.put(sig, "sfda",123,99)
 	cache.printCache()
 	fmt.Println(cache.tail)
+	for k, v := range cache.items {
+		fmt.Println("k:", k, "v:", v)
+	}
 	// insertingitem("test", 100, 0, 69)
 }

@@ -4,6 +4,7 @@ import (
 
 	// "errors"
 	"fmt"
+	// "strings"
 	// "mime/multipart"
 	"database/sql"
 	"log"
@@ -185,6 +186,7 @@ func (c *Cache) get(end chan int, name string, key int, load int) {
 
 func (c *Cache) put(end chan int, name string,key int, load int) {
 	//if there's already key in cache just add 
+
 	log.Println("suck this head")
 	c.mu.Lock()
 	if _, ok := c.items[key]; ok {
@@ -213,8 +215,9 @@ func (c *Cache) put(end chan int, name string,key int, load int) {
 	
 	x := make(chan bool) 
 	y := make(chan int)
-
+	
 	go going_in(y, x,end, name, key, load)
+	
 	inDB :=<-x
 	// select{
 	// 	case inDB := <-x:
@@ -232,6 +235,7 @@ func (c *Cache) put(end chan int, name string,key int, load int) {
 			
 
 	// 	}
+	
 	if(!inDB){
 		log.Println("not here")
 		<-end
@@ -241,7 +245,6 @@ func (c *Cache) put(end chan int, name string,key int, load int) {
 		log.Println("dsfsdf")
 		load := <- y
 		log.Println("heeehhe")
-		
 		newItem := newItemNode(name, key, load)
 	
 		c.mu.Lock()
@@ -514,23 +517,29 @@ func main(){
 	result:= make(chan int,100)
 	
 	// sig:= make(chan *cacheItem, 100)
-	cache:= newCache(5)
-
-	go cache.put(result, "fruit", 1, 30)
-	go cache.put(result, "1132", 1, 20)
-	go cache.put(result, "223", 1, 20)
+	cache:= newCache(1000)
+	for i:=0; i<10; i++{
+		go cache.put(result, "fruit", 1, 30)
+		go cache.put(result, "1132", 3, 20)
+		go cache.put(result, "223", 1, 20)
+	}
+	
 
 	// cache.get(result, "fu ",6, 1)
 	// db.Exec("update items set quantity = ? where id = ? ", 2000, 6)
 	// cache.get(result,"444",1,10)
-	<- result
-	<- result
-	<- result
+	for i:=0; i<10; i++{
+		<- result
+		<- result
+		<- result
+	}
+	
 	
 	// cache.get(sig, result,"album",23,90)
 	// cache.put(sig, "wig",55,50)
 	// cache.put(sig, "album",23,100)
 	// cache.put(sig, "sfda",123,99)
 	cache.printCache()
+	fmt.Println(cache.tail)
 	// insertingitem("test", 100, 0, 69)
 }

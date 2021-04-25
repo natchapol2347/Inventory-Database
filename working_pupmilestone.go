@@ -253,8 +253,9 @@ func going_in(end chan int, name string, id int, quantity int) {
 		<-c // wait for all go routines
 		mutex.Unlock()
 	} else {
+
+		fmt.Println("yolo")
 		insertingitem("New  with id "+strconv.Itoa(id), quantity, 0, id)
-		fmt.Println("fuck")
 
 
 	}
@@ -264,7 +265,6 @@ func going_in(end chan int, name string, id int, quantity int) {
 
 	num, _ := strconv.Atoi(name)
 	end <- num
-	fmt.Println("yolo")
 	return
 }
 
@@ -352,13 +352,15 @@ func show_record_out(endrec chan int, name string) {
 func main(){
 	db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
 	defer db.Close()
-	c:= make(chan int)
+	c:= make(chan int,20)
 
 	cache:= newCache(5)
 
-	cache.put(c,"fruit", 1, 960)
-	cache.put(c,"boots",2,50)
-	cache.put(c,"wigs",55, 69)
-	cache.get(c, "wigs",55, 69)
+	 cache.put(c,"fruit", 213, 960)
+	 cache.put(c,"boots",2,50)
+	 cache.put(c,"wigs",55, 69)
+	 cache.get(c, "wigs",55, 69)
+	 
 	cache.printCache()
+	
 } 

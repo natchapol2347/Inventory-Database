@@ -156,6 +156,7 @@ func (c *Cache) put(endSig chan int, name string, key int, load int) {
 		c.promote(c.items[key])
 		
 		
+		
 	}
 	c.mu.Unlock()
 
