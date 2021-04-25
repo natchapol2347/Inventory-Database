@@ -1,4 +1,5 @@
 package main
+
 import (
 	"bufio"
 	"fmt"
@@ -8,9 +9,11 @@ import (
 	"net"
 	"strconv"
 	"time"
+
 	// "os"
 	"strings"
 )
+
 func main() {
 	con, err := net.Dial("tcp", "128.199.64.63:5678")
 	//con, err := net.Dial("tcp", "128.199.64.79:9999")
@@ -23,7 +26,7 @@ func main() {
 	end := make(chan int, n)
 	for i := 0; i < n; i++ {
 		// Waiting for the client request
-		go client(end, con, err,start_whole)
+		go client(end, con, err, start_whole)
 	}
 	for i := 0; i < n; i++ {
 		<-end
