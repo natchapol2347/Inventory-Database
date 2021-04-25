@@ -4,6 +4,7 @@ import (
 
 	// "errors"
 	"fmt"
+	// "math/big"
 	// "mime/multipart"
 	"database/sql"
 	"log"
@@ -92,6 +93,82 @@ func (c *Cache) moveToFront(node *cacheItem){
 	c.tail = node
 }
 
+func (c *Cache) put(end chan int, name string,key int, load int) {
+	//if there's already key in cache just add 
+	log.Println("trying1")
+	exists := make(chan string)
+	full   := make(chan string)
+	insert := make(chan string)
+	log.Println("trying2")
+	for{
+		go c.keyStateCache(exists, full, insert, key)
+		// x:= <-exists
+		// y:= <-full
+		// z:= <-insert
+		log.Println("trying3")
+		select{
+			case i := <-exists:
+				{
+					log.Println(i)
+					c.mu.Lock()
+					c.items[key].quantity += load
+					c.mu.Unlock()
+					c.mu.Lock()
+					c.promote(c.items[key])
+					c.mu.Unlock()
+					go going_in(nil,nil,end, name, key, load)
+					<- end
+				}
+				
+			case j := <-full:
+				{
+					log.Println(j)
+					delKey := c.head.serial
+					c.pop()
+					c.size--
+					c.mu.Lock()
+					delete(c.items, delKey)
+					c.mu.Unlock()
+				}
+				
+			case k := <- insert:
+			{
+				log.Println(k)
+				x := make(chan bool) 
+				y := make(chan int)
+				go going_in(y, x,end, name, key, load)
+				inDB :=<-x
+			
+				if(!inDB){
+					log.Println("not here")
+					<- end
+				}else{
+					log.Println("dsfsdf")
+					load := <- y
+					log.Println("heeehhe")
+					
+					newItem := newItemNode(name, key, load)
+				
+					c.mu.Lock()
+					c.items[key] = newItem
+					c.mu.Unlock()
+					c.mu.Lock()
+					c.insert_tail(newItem)
+					c.mu.Unlock()
+					c.size++
+					
+					
+					log.Println("les go")
+				}
+			
+			}
+		
+  	   }
+	}
+	
+			
+}
+
 func (c *Cache) pop(){
 	if c.head == nil && c.tail == nil{
 		return
@@ -114,18 +191,31 @@ func (c *Cache) printCache(){
 	fmt.Println("\n")
 }
 
-func (c *Cache) keyStateCache(existed chan string, full chan string, insert chan string, key int)
-{
+func (c *Cache) keyStateCache(existed chan string, full chan string, insert chan string, key int){
 	
-	if res, ok := c.items[key]; ok{
-		existed <- "EXISTS"
-	}else if c.size == c.capacity {
-		full <- "FULL"
+		c.mu.Lock()
+		if _, ok := c.items[key]; ok{
+			log.Println("yeet1")
+			go sendToChannel(existed, "EXISTS")
+			// existed <- "EXISTS"
+	
+		}
+		c.mu.Unlock()
 		
-	}else{
-		insert <- "INSERT"
-	}
-
+		if c.size == c.capacity {
+			log.Println("yeet2")
+			go sendToChannel(full, "FULL")
+			// full <- "FULL"
+			
+		}else{
+			log.Println("yeet3")
+			go sendToChannel(insert, "INSERT")
+			// insert <- "INSERT"
+			
+		}
+	
+	
+	
 }
 func (c *Cache) get(end chan int, name string, key int, load int) {
 	c.mu.Lock()
@@ -281,8 +371,12 @@ func (c *Cache) get(end chan int, name string, key int, load int) {
 	
 	
 }
-func read(c chan int){
+func sendToChannel(ch chan string, sig string){
+	ch <- sig
+}
 
+func dumpChannel(ch chan int){
+	<- ch
 }
 
 func (c *Cache) promote(node *cacheItem) {
@@ -427,7 +521,6 @@ func going_in(retQuantity chan int ,sig chan bool, end chan int, name string, id
 
 	retName, _:= strconv.Atoi(name)
 	end <- retName
-	
 	log.Println("haha")
 
 }
@@ -521,22 +614,24 @@ func main(){
 	
 	// sig:= make(chan *cacheItem, 100)
 	cache:= newCache(1000)
-	for i:=0; i<10; i++{
-		go cache.put(result, "fruit", 1, 30)
-		go cache.put(result, "1132", 3, 20)
-		go cache.put(result, "223", 1, 20)
-	}
+	go cache.put(result, "fruit", 1, 30)
+	go cache.put(result, "1132", 3, 20)
+	go cache.put(result, "223", 1, 20)
+	go cache.put(result, "x", 1, 30)
+	go cache.put(result, "sd", 1, 30)
+	go cache.put(result, "sddsf", 1, 30)
+
 	
 
 	// cache.get(result, "fu ",6, 1)
 	// db.Exec("update items set quantity = ? where id = ? ", 2000, 6)
 	// cache.get(result,"444",1,10)
-	for i:=0; i<10; i++{
-		<- result
-		<- result
-		<- result
-	}
-	
+	<- result
+	<- result
+	<- result
+	<- result
+	<- result
+	<- result
 	
 	// cache.get(sig, result,"album",23,90)
 	// cache.put(sig, "wig",55,50)
