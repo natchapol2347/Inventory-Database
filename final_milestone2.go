@@ -112,12 +112,13 @@ func (c *Cache) put(end chan int, name string,key int, load int) {
 					log.Println(i)
 					c.mu.Lock()
 					c.items[key].quantity += load
-					c.mu.Unlock()
-					c.mu.Lock()
+					// c.mu.Unlock()
+					// c.mu.Lock()
 					c.promote(c.items[key])
-					c.mu.Unlock()
+					
 					go going_in(nil,nil,end, name, key, load)
 					<- end
+					c.mu.Unlock()
 				}
 				
 			case j := <-full:
