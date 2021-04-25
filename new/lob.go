@@ -27,7 +27,7 @@ func (b *Backends) String() string {
 
 var (
     bind     = flag.String("bind", "0.0.0.0:5678", "0.0.0.0:5678")
-    balance  = flag.String("balance", "127.0.0.2:9999,127.0.0.1:8888", "127.0.0.2:9999,127.0.0.1:8888")
+    balance  = flag.String("balance", "127.0.0.2:9999,127.0.0.3:8888", "127.0.0.2:9999,127.0.0.3:8888")
     backends *Backends
 )
 

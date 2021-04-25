@@ -22,7 +22,7 @@ import (
 var (
 	db    *sql.DB
 	mutex sync.Mutex
-
+	count int = 0
 )
 
 func main() {
@@ -38,7 +38,8 @@ func main() {
 			log.Println(err)
 			continue
 		}
-
+		count++
+		fmt.Println("clients ", count)
 		go handleClientRequest(con)
 	}
 }
@@ -47,7 +48,8 @@ func handleClientRequest(con net.Conn) {
 	defer con.Close()
 
 	clientReader := bufio.NewReader(con)
-	db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
+	db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(localhost:3306)/inventory")
+	db.SetMaxOpenConns(100000)
 	for {
 		// Waiting for the client request
 		clientRequest, err := clientReader.ReadString('\n')
@@ -94,14 +96,14 @@ func handleClientRequest(con net.Conn) {
 		if number == 1 {
 			// db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
 			endin := make(chan int)
-			go Going_in(endin, strconv.Itoa(rand.Intn(10) + 1), rand.Intn(10) + 1, rand.Intn(1000) + 1)
+			go Going_in(endin, strconv.Itoa(rand.Intn(10) + 1), rand.Intn(10) + 1, rand.Intn(10) + 1)
 			// time.Sleep(time.Millisecond)
 			message = "The item has been added."
 			<-endin
 		} else if number == 2 {
 			// db, _ = sql.Open("mysql", "ohm:!Bruno555@tcp(127.0.0.1:3306)/inventory")
 			endout := make(chan int)
-			go Going_out(endout, strconv.Itoa(rand.Intn(10) + 1), rand.Intn(10) + 1, rand.Intn(1000) + 1)
+			go Going_out(endout, strconv.Itoa(rand.Intn(10) + 1), rand.Intn(10) + 1, rand.Intn(10) + 1)
 			// time.Sleep(time.Millisecond)
 			message = "The item has been removed."
 			<-endout
@@ -232,7 +234,9 @@ func Going_in(end chan int, name string, id int, quantity int) {
 		<-c // wait for all go routines
 		mutex.Unlock()
 	} else {
+		// mutex.Lock()
 		Insertingitem("New  with id "+strconv.Itoa(id), quantity, 0, id)
+		// mutex.Unlock()
 	}
 
 	go Insertingim(n, e, quantity, id, name)
