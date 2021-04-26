@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
+	_"github.com/go-sql-driver/mysql"
 	// "github.com/golang/glog"
 )
 
@@ -22,6 +22,7 @@ type Cache struct {
 	size int
 	items    map[int]*cacheItem
 	mu       sync.Mutex
+	lookUp   sync.RWMutex
 	head     *cacheItem
 	tail     *cacheItem
 }
@@ -32,7 +33,6 @@ type cacheItem struct {
 	quantity int
 	next     *cacheItem
 	prev	 *cacheItem
-	mu       sync.Mutex
 	last_promoted time.Time
 }
 
@@ -42,6 +42,7 @@ func newCache(c int) *Cache {
 		size: 0,
 		items:    make(map[int]*cacheItem),
 		mu:       sync.Mutex{},
+		lookUp:	  sync.RWMutex{},
 		head:     nil,
 		tail: 	  nil,
 	}
@@ -54,14 +55,12 @@ func newItemNode(in_name string, key int, value int) *cacheItem{
 		quantity: value,
 		next: nil,
 		prev: nil,
-		mu :     sync.Mutex{},
 		last_promoted: time.Time{},
 	}
 }
 func (c *Cache) insert_tail(newItem *cacheItem) {
 	//make new item from argument
 	
-
 	if(c.tail == nil && c.head == nil){
 		c.tail = newItem
 		c.head = newItem
@@ -70,8 +69,8 @@ func (c *Cache) insert_tail(newItem *cacheItem) {
 		newItem.next = c.tail
 		c.tail.prev = newItem
 		c.tail = newItem
-		
 	}
+	
 	
 
 }
@@ -95,13 +94,14 @@ func (c *Cache) moveToFront(node *cacheItem){
 
 func (c *Cache) put(end chan int, name string,key int, load int) {
 	//if there's already key in cache just add 
-	log.Println("trying1")
 	exists := make(chan string)
 	full   := make(chan string)
 	insert := make(chan string)
-	log.Println("trying2")
-	for{
+	// for{
+		
+		
 		go c.keyStateCache(exists, full, insert, key)
+		
 		// x:= <-exists
 		// y:= <-full
 		// z:= <-insert
@@ -116,8 +116,8 @@ func (c *Cache) put(end chan int, name string,key int, load int) {
 					c.mu.Lock()
 					c.promote(c.items[key])
 					c.mu.Unlock()
-					go going_in(nil,nil,end, name, key, load)
-					<- end
+					go going_in(nil,end, name, key, load)
+					
 					
 				}
 				
@@ -135,36 +135,32 @@ func (c *Cache) put(end chan int, name string,key int, load int) {
 			case k := <- insert:
 			{
 				log.Println(k)
-				x := make(chan bool) 
 				y := make(chan int)
-				go going_in(y, x,end, name, key, load)
-				inDB :=<-x
-			
-				if(!inDB){
-					log.Println("not here")
-					<- end
-				}else{
-					log.Println("dsfsdf")
-					load := <- y
-					log.Println("heeehhe")
-					
-					newItem := newItemNode(name, key, load)
+				go going_in(y,end, name, key, load)
 				
-					c.mu.Lock()
-					c.items[key] = newItem
-					c.mu.Unlock()
-					c.mu.Lock()
-					c.insert_tail(newItem)
-					c.mu.Unlock()
-					c.size++
 					
+				load := <- y
+				
+			
+				newItem := newItemNode(name, key, load)
+				c.lookUp.Lock()
+				c.items[key] = newItem
+				c.lookUp.Unlock()
+				
+				c.mu.Lock()
+				c.insert_tail(newItem)
+				c.mu.Unlock()
+				
+				
+				c.size++
 					
-					log.Println("les go")
-				}
+				
+				
 			
 			}
+			
 		
-  	   }
+  	//    }
 	}
 	
 			
@@ -194,9 +190,10 @@ func (c *Cache) printCache(){
 
 func (c *Cache) keyStateCache(existed chan string, full chan string, insert chan string, key int){
 	
+	
 		c.mu.Lock()
 		if _, ok := c.items[key]; ok{
-			log.Println("yeet1")
+			
 			go sendToChannel(existed, "EXISTS")
 			// existed <- "EXISTS"
 	
@@ -204,12 +201,13 @@ func (c *Cache) keyStateCache(existed chan string, full chan string, insert chan
 		c.mu.Unlock()
 		
 		if c.size == c.capacity {
-			log.Println("yeet2")
+			
 			go sendToChannel(full, "FULL")
 			// full <- "FULL"
 			
-		}else{
-			log.Println("yeet3")
+		}
+		if _, ok := c.items[key]; !ok{
+			
 			go sendToChannel(insert, "INSERT")
 			// insert <- "INSERT"
 			
@@ -217,157 +215,85 @@ func (c *Cache) keyStateCache(existed chan string, full chan string, insert chan
 	
 	
 	
+	
 }
 func (c *Cache) get(end chan int, name string, key int, load int) {
-	c.mu.Lock()
-	if res, ok := c.items[key]; ok{
-		c.mu.Unlock()
-		value := res.quantity
-		if(value - load < 0){
-			// fmt.Println("not enough in stock")
-			<- end
-			return 
+	exists := make(chan string)
+	full   := make(chan string)
+	insert := make(chan string)
+
+	go c.keyStateCache(exists, full, insert, key)
+	select{
+		case i:=<- exists:
+			{
+				log.Println(i)
+				c.lookUp.RLock()			
+				if(c.items[key].quantity-load<0){
+					log.Println("cache: quantity less than request")
+					break
+				}
+				c.lookUp.RUnlock()
+				
+				c.mu.Lock()
+				c.items[key].quantity -= load 
+				c.mu.Unlock()
+				c.lookUp.Lock()
+				c.promote(c.items[key])
+				c.lookUp.Unlock()
+				
+				go going_out(nil,nil, end, name, key, load)
+
+				
+			}
+
+		case j := <-full:
+			{
+				log.Println(j)
+				delKey := c.head.serial
+				c.pop()
+				c.size--
+				c.mu.Lock()
+				delete(c.items, delKey)
+				c.mu.Unlock()
+			}
+			
+		case k := <- insert:
+		{
+			log.Println(k)
+			x := make(chan bool) 
+			y := make(chan int)
+			go going_out(y, x,end, name, key, load)
+			inDB :=<-x
+		
+			if(!inDB){
+				log.Println("cache: item not in db")
+				break
+				<- end
+			}else{//cache miss
+				
+				load := <- y
+				
+			
+				newItem := newItemNode(name, key, load)
+				c.lookUp.Lock()
+				c.items[key] = newItem
+				c.lookUp.Unlock()
+				
+				c.mu.Lock()
+				c.insert_tail(newItem)
+				c.mu.Unlock()
+				
+				
+				c.size++
+				
+			
+			}
+		
 		}
-		c.promote(res)
-		res.mu.Lock()
-		c.items[key].quantity -= load 
-		res.mu.Unlock()
-		// c.mu.Lock()
-		// result <- c.items[key]
-		// c.mu.Unlock()
-		go going_out(nil, end, name, key, load)
-		<- end
-		
-		return 
-	}else{
-		//if there's no key
-		// fmt.Println("there's no key", key, "yet")
-		c.mu.Unlock()
-		x := make(chan bool) 
-		defer close(x)
-		
-		go going_out(x, end, name, key, load)
-		
-		// select{
-		// case inDB := <-x:
-		// 	{
-		// 		if(!inDB){
-		// 			log.Println("not here")
-		// 			<- end
-		// 			return 
-		// 		}
-		// 	}
-		// default:
-		// 	{
-		// 		log.Println("channel not ready")
-		// 	}
+			
 			
 
-		// }
-		if(!<-x){
-			log.Println("not here")
-			<-end
-			return
-
-		}else{
-			log.Println("channel not ready")
-		}
-
-		log.Println("kksdf")
-		c.put(end, name, key, load)
-		// c.mu.Lock()
-		// result <- c.items[key]
-		// c.mu.Unlock()
-		fmt.Println("kksdf")
-		<- end
-		return 
-		
 	}
-	c.mu.Lock()
-	if _, ok := c.items[key]; ok {
-		log.Println("ficll")
-		c.mu.Unlock()
-		c.items[key].mu.Lock()
-		c.items[key].quantity += load
-		c.items[key].mu.Unlock()
-		c.promote(c.items[key])
-		fmt.Println("yoyo")
-		go going_in(nil,nil,end, name, key, load)
-		<- end
-		return
-	}
-	c.mu.Unlock()
-	//if cache is full delete last recent node
-	if c.size == c.capacity {
-		delKey := c.head.serial
-		c.pop()
-		c.size--
-		c.mu.Lock()
-		delete(c.items, delKey)
-		c.mu.Unlock()
-	}
-	//insert new node
-	
-	x := make(chan bool) 
-	y := make(chan int)
-
-	go going_in(y, x,end, name, key, load)
-	inDB :=<-x
-	// select{
-	// 	case inDB := <-x:
-	// 		{
-	// 			if(!inDB){
-	// 				log.Println("not here")
-	// 				<- end
-	// 				return 
-	// 			}
-	// 		}
-	// 	default:
-	// 		{
-	// 			log.Println("channel not ready")
-	// 		}
-			
-
-	// 	}
-	if(!inDB){
-		log.Println("not here")
-		<-end
-		return
-
-	}else{
-		log.Println("dsfsdf")
-		load := <- y
-		log.Println("heeehhe")
-		
-		newItem := newItemNode(name, key, load)
-	
-		c.mu.Lock()
-		c.items[key] = newItem
-		c.mu.Unlock()
-		c.mu.Lock()
-		c.insert_tail(newItem)
-		c.mu.Unlock()
-		c.size++
-		
-		
-		log.Println("les go")
-		
-	}
-	
-	// select{
-	// case load:= <- end:
-	// 	{
-	// 		log.Printf("there is %d \n", load)
-	// 		page := c.insert_tail(name, key, load)
-	// 		c.size++
-	// 		c.mu.Lock()
-	// 		c.items[key] = page
-	// 		c.mu.Unlock()
-	// 		log.Println("les go")
-	// 	}
-	// default:
-	// 	log.Printf("waiting to receive")
-	// }
 	
 	
 	
@@ -384,8 +310,8 @@ func (c *Cache) promote(node *cacheItem) {
 	now := time.Now()
 	stale := now.Add(time.Minute * -1) // if more than one minute has pass allow for promotion
   
-	node.mu.Lock()
-	defer node.mu.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	if node.last_promoted.Before(stale) {
 	  node.last_promoted = now
 	  c.mu.Lock()
@@ -440,9 +366,8 @@ func insertingex(n chan string, e chan int, quantity int, id int, name string) {
 	db.Exec("INSERT INTO export(name, quantity, expdate,id,user) VALUES (?, ?, ?, ?, ?)", product, quantity, expdate, id, name)
 }
 
-func going_out(sig chan bool, end chan int, name string, id int, quantity int) {
-	// fmt.Printf("start\n")
-	start := time.Now()
+func going_out(retQuantity chan int, sig chan bool, end chan int, name string, id int, quantity int) {
+	
 	c := make(chan int)
 	q := make(chan int)
 	e := make(chan int)
@@ -452,22 +377,19 @@ func going_out(sig chan bool, end chan int, name string, id int, quantity int) {
 		go get_items(q, e, n, id)
 		go decrement(q, c, quantity, id)
 		<-c // wait for all go routines
-		log.Println("burh")
 		mutex.Unlock()
 	} else {
 		sig <- false
-		log.Println("burh2")
 		return
 	}
 	go insertingex(n, e, quantity, id, name)
-	fmt.Printf("time: %v\n", time.Since(start))
+	go get_items(q, e, n, id)
+	num:= (<-q -quantity)
+	sig <-true
+	retQuantity <- num
 
-	num, _ := strconv.Atoi(name)
-	end <- num
-	sig <- true
-	fmt.Println("hey?")
-	fmt.Println("hello?")
-	return	
+	retName, _:= strconv.Atoi(name)
+	end <- retName
 }
 
 func increment(q chan int, c chan int, quantity int, id int) {
@@ -487,7 +409,7 @@ func insertingim(n chan string, e chan int, quantity int, id int, name string) {
 	db.Exec("INSERT INTO import(name, quantity, expdate,id,user) VALUES (?, ?, ?, ?, ?)", product, quantity, expdate, id, name)
 }
 
-func going_in(retQuantity chan int ,sig chan bool, end chan int, name string, id int, quantity int) {
+func going_in(retQuantity chan int, end chan int, name string, id int, quantity int) {
 	c := make(chan int)
 	q := make(chan int)
 	e := make(chan int)
@@ -501,7 +423,7 @@ func going_in(retQuantity chan int ,sig chan bool, end chan int, name string, id
 		mutex.Unlock()
 	} else {
 		insertingitem("New  with id "+strconv.Itoa(id), quantity, 0, id)
-		sig <- false
+		
 		
 	}
 	log.Println("wttf")
@@ -514,7 +436,7 @@ func going_in(retQuantity chan int ,sig chan bool, end chan int, name string, id
 	num := <-q + quantity
 	log.Println("oo")
 
-	sig <- true
+	
 	log.Println("uu")
 
 	log.Println(num)
@@ -615,12 +537,17 @@ func main(){
 	
 	// sig:= make(chan *cacheItem, 100)
 	cache:= newCache(1000)
+	var wg sync.WaitGroup 
+	wg.Add(7)
 	go cache.put(result, "fruit", 1, 30)
 	go cache.put(result, "1132", 3, 20)
 	go cache.put(result, "223", 1, 20)
 	go cache.put(result, "x", 1, 30)
 	go cache.put(result, "sd", 1, 30)
 	go cache.put(result, "sddsf", 1, 30)
+	// go cache.put(result, "s888", 69, 10)
+	go cache.get(result, "s888", 69, 10)
+
 
 	
 
