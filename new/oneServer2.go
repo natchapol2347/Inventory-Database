@@ -220,28 +220,43 @@ func Insertingim(n chan string, e chan int, quantity int, id int, name string) {
 	db.Exec("INSERT INTO import(name, quantity, expdate,id,user) VALUES (?, ?, ?, ?, ?)", product, quantity, expdate, id, name)
 }
 
+func insertingim_first(name string, expdate int, quantity int, id int, nameuse string){
+	db.Exec("INSERT INTO import(name, quantity, expdate,id,user) VALUES (?, ?, ?, ?, ?)", name, quantity, expdate, id, nameuse)
+}
+
 func Going_in(end chan int, name string, id int, quantity int) {
 	// start := time.Now()
+	// d := make(chan int)
 	c := make(chan int)
 	q := make(chan int)
 	e := make(chan int)
 	n := make(chan string)
+	mutex.Lock()
 	if RowExists("SELECT * FROM items WHERE id = ?", id) {
-		// fmt.Println(id)
-		mutex.Lock()
+		fmt.Println("yeeha")
+		// mutex.Lock()
 		go Get_items(q, e, n, id)
 		go Plus(q, c, quantity, id)
+		// go Insertingim(n, e, quantity, id, name,c)
 		<-c // wait for all go routines
-		mutex.Unlock()
+		// mutex.Unlock()
+		// go Insertingim(n, e, quantity, id, name)
 	} else {
+		
 		// mutex.Lock()
-		Insertingitem("New  with id "+strconv.Itoa(id), quantity, 0, id)
+		fmt.Println("hello")
+		go Insertingitem("New  with id "+strconv.Itoa(id), quantity, 0, id,c)
+		// go Get_items(q, e, n, id)
+		// go Plus(q, c, quantity, id)
+		go insertingim_first("New  with id "+strconv.Itoa(id), 0, quantity, id, name)
+		<-c // wait for all go routines
 		// mutex.Unlock()
 	}
-
+	mutex.Unlock()
 	go Insertingim(n, e, quantity, id, name)
+	// go Insertingim(n, e, quantity, id, name)
 	// fmt.Printf("time: %v\n", time.Since(start))
-
+	
 	num, _ := strconv.Atoi(name)
 	end <- num
 	return
@@ -255,11 +270,19 @@ func RowExists(query string, args ...interface{}) bool {
 	if err != nil && err != sql.ErrNoRows {
 		glog.Fatalf("error checking if row exists '%s' %v", args, err)
 	}
+	// d<-0
+	// <-d
 	return exists
 }
 
-func Insertingitem(name string, quantity int, expdate int, id int) {
+func Insertingitem(name string, quantity int, expdate int, id int, c chan int) {
+	// mutex.Lock()
+	// mutex.Unlock()
+	// namee:=<-n
 	db.Exec("INSERT INTO items(name,quantity,expdate,id) VALUES (?,?,?,?)", name, quantity, expdate, id)
+	// go Insertingim(n, e, quantity, id, namee)
+	c<-0
+	
 }
 
 func Show_current(endrec chan int, name string, me chan string) {
